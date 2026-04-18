@@ -1,5 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Clinicks.Application.Context;
+using Clinicks.Application.Interfaces;
+using Clinicks.Application.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ClinicksDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+//Esto le dice a la aplicación que cada vez que alguien pida un IPacienteService, le dé una instancia de PacienteService.
+builder.Services.AddScoped<IPacienteService, PacienteService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
