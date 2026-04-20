@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-500: oklch(0.75 0.15 175);
+  --color-emerald-600: oklch(0.70 0.15 175);
+  --color-emerald-50: oklch(0.97 0.01 175);
+}
+
+:root {
+  background-color: #f9fafb; /* Un gris muy clarito de fondo para que resalten las tarjetas */
+}
