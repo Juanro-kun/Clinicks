@@ -1,14 +1,17 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Clinicks.Application.Interfaces;
+﻿using Clinicks.Application.Interfaces;
 using Clinicks.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Clinicks.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PacientesController : ControllerBase
     {
+
         private readonly IPacienteService _pacienteService;
 
         // Inyectamos la Interfaz, no la clase directamente. 
@@ -17,6 +20,7 @@ namespace Clinicks.API.Controllers
         {
             _pacienteService = pacienteService;
         }
+
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -46,6 +50,7 @@ namespace Clinicks.API.Controllers
         {
             await _pacienteService.DeleteAsync(dni);
             return Ok("Paciente borrado.");
-      
+
+        }
     }
 }

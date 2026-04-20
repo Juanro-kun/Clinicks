@@ -75,7 +75,7 @@ public partial class ClinicksDbContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("nombre");
             entity.Property(e => e.Password)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .IsUnicode(false)
                 .HasColumnName("password");
             entity.Property(e => e.Rol).HasColumnName("rol");
