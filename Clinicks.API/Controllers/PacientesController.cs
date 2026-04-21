@@ -3,6 +3,7 @@ using Clinicks.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clinicks.API.Controllers
 {
@@ -51,6 +52,22 @@ namespace Clinicks.API.Controllers
             await _pacienteService.DeleteAsync(dni);
             return Ok("Paciente borrado.");
 
+        }
+
+        [HttpPut("{dni}")]
+        public async Task<IActionResult> PutPaciente(int dni, Paciente paciente)
+        {
+            if (dni != paciente.Dni) return BadRequest("El DNI no coincide");
+
+            // El service hace el laburo sucio
+            bool actualizado = await _pacienteService.UpdateAsync(paciente);
+
+            if (!actualizado)
+            {
+                return NotFound($"No encontré ningún paciente con DNI {dni}");
+            }
+
+            return NoContent(); // 204: "Todo bien, no tengo nada más que decirte"
         }
     }
 }

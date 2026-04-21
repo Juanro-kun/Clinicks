@@ -36,10 +36,27 @@ namespace Clinicks.Application.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateAsync(Paciente paciente)
+        public async Task<bool> UpdateAsync(Paciente paciente)
         {
             _context.Entry(paciente).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return true; // Salió todo joya
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Si saltó este error, es muy probable que el paciente no exista
+                if (!PacienteExists(paciente.Dni)) return false;
+                throw; // Si es otro error raro, que explote
+            }
+        }
+
+        // Un helper privado en el service para chequear si está
+        private bool PacienteExists(int dni)
+        {
+            return _context.Pacientes.Any(e => e.Dni == dni);
         }
 
         public async Task DeleteAsync(int dni)

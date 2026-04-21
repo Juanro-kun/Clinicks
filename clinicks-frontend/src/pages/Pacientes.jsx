@@ -1,17 +1,20 @@
 import { useState, useEffect, useMemo } from "react"
-import { Plus, Search, LogOut, Users, Bed, ArrowLeftRight, ClipboardList, X, Trash2, Pencil } from "lucide-react"
+import { Plus, Search, LogOut, Users, ClipboardList, X, Trash2, Pencil } from "lucide-react"
 import api from "../api/api"
 import { useNavigate } from "react-router-dom"
 
 export default function Pacientes() {
   const [patients, setPatients] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [isModalOpen, setIsModalOpen] = useState(false) // Estado para el Modal
-  const [newPatient, setNewPatient] = useState({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' })
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  // Estado para saber si estamos editando o creando uno nuevo
+  const [isEditing, setIsEditing] = useState(false)
+  
+  const [patientForm, setPatientForm] = useState({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' })
   
   const navigate = useNavigate()
 
-  // Cargar pacientes
   const fetchPacientes = async () => {
     try {
       const res = await api.get('/Pacientes')
@@ -23,21 +26,50 @@ export default function Pacientes() {
 
   useEffect(() => { fetchPacientes() }, [])
 
-  // Guardar nuevo paciente
+  // 1. FUNCIÓN PARA PREPARAR LA EDICIÓN
+  const handleEditRequest = (p) => {
+    setPatientForm(p) // Cargamos los datos del paciente en el form
+    setIsEditing(true) // Activamos modo edición
+    setIsModalOpen(true) // Abrimos el modal
+  }
+
+  // 2. FUNCIÓN PARA CERRAR Y LIMPIAR
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setIsEditing(false)
+    setPatientForm({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' })
+  }
+
+  // 3. GUARDAR (POST o PUT)
   const handleSave = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/Pacientes', newPatient)
-      setIsModalOpen(false) // Cerramos el modal
-      setNewPatient({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' }) // Limpiamos
-      fetchPacientes() // Recargamos la lista
+      if (isEditing) {
+        // Si estamos editando, mandamos PUT a /Pacientes/{dni}
+        await api.put(`/Pacientes/${patientForm.dni}`, patientForm)
+      } else {
+        // Si no, mandamos el POST de siempre
+        await api.post('/Pacientes', patientForm)
+      }
+      closeModal()
+      fetchPacientes()
     } catch (err) {
-      alert("Error al guardar. Revisá que el DNI no esté duplicado.")
+      alert("Hubo un error al procesar la solicitud.")
+    }
+  }
+
+  const handleDelete = async (dni) => {
+    if (window.confirm("¿Seguro que querés borrar a este paciente?")) {
+      try {
+        await api.delete(`/Pacientes/${dni}`)
+        setPatients(patients.filter(p => p.dni !== dni))
+      } catch (err) {
+        alert("No se pudo eliminar.")
+      }
     }
   }
 
   const filteredPatients = useMemo(() => {
-    if (!searchTerm.trim()) return patients
     const term = searchTerm.toLowerCase()
     return patients.filter(p => 
       p.dni.toString().includes(term) || 
@@ -46,115 +78,117 @@ export default function Pacientes() {
     )
   }, [patients, searchTerm])
 
-  const handleDelete = async (dni) => {
-        if (window.confirm("¿Seguro que querés borrar a este paciente?")) {
-            try {
-                await api.delete(`/Pacientes/${dni}`);
-                setPatients(patients.filter(p => p.dni !== dni));
-            } catch (err) {
-                alert("No se pudo eliminar.");
-            }
-        }
-    };
-
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      
-      
-      <main className="flex-1 p-8">
-        <div className="max-w-6xl mx-auto">
-          <header className="flex justify-between items-center mb-10">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Gestión de Pacientes</h1>
-            </div>
-            {/* AQUÍ CONECTAMOS EL BOTÓN */}
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-emerald-200"
-            >
-              <Plus className="w-5 h-5" /> Nuevo Paciente
-            </button>
-          </header>
+    <>
+      <header className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Gestión de Pacientes</h1>
+          <p className="text-slate-500 mt-1">Administrá los registros de la clínica</p>
+        </div>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-emerald-200"
+        >
+          <Plus className="w-5 h-5" /> Nuevo Paciente
+        </button>
+      </header>
 
-          {/* TABLA ESTILO CARD */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-200">
-                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">DNI</th>
-                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre</th>
-                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</th>
-                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono</th>
-                <th className="px-8 py-5 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+      {/* Buscador */}
+      <div className="mb-8 relative max-w-md">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Buscar..."
+          className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 shadow-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-slate-50/50 border-b border-slate-200">
+              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">DNI</th>
+              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Nombre</th>
+              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
             {filteredPatients.map((p) => (
-                <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors group">
+              <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-8 py-5 text-sm font-bold text-slate-700">{p.dni}</td>
                 <td className="px-8 py-5 text-sm text-slate-600 font-medium">{p.nombre} {p.apellido}</td>
-                <td className="px-8 py-5 text-sm text-slate-500">{p.direccion || '-'}</td>
-                <td className="px-8 py-5 text-sm text-slate-500">{p.telefono || '-'}</td>
                 <td className="px-8 py-5 text-right">
                   <div className="flex justify-end gap-2">
-                    {/* Botón Editar */}
+                    {/* BOTÓN EDITAR */}
                     <button 
-                        onClick={() => console.log("Editar", p.dni)} 
-                        className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
+                      onClick={() => handleEditRequest(p)}
+                      className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg"
                     >
-                        <Pencil className="w-4 h-4" /> 
+                      <Pencil className="w-4 h-4" />
                     </button>
-                    
-                    {/* Botón Eliminar */}
                     <button 
-                        onClick={() => handleDelete(p.dni)} 
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      onClick={() => handleDelete(p.dni)}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
                     >
-                        <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                    </div>
+                  </div>
                 </td>
-                </tr>
+              </tr>
             ))}
-            </tbody>
+          </tbody>
         </table>
-        </div>
-        </div>
-      </main>
+      </div>
 
-      {/* --- MODAL DE NUEVO PACIENTE --- */}
+      {/* MODAL REUTILIZABLE */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Nuevo Paciente</h2>
-              <button onClick={() => setIsModalOpen(false)}><X className="text-slate-400" /></button>
+              <h2 className="text-2xl font-bold text-slate-800">
+                {isEditing ? 'Editar Paciente' : 'Nuevo Paciente'}
+              </h2>
+              <button onClick={closeModal}><X className="text-slate-400" /></button>
             </div>
             
             <form onSubmit={handleSave} className="space-y-4">
-              <input type="number" placeholder="DNI" className="w-full p-3 border border-slate-200 rounded-xl" required
-                onChange={e => setNewPatient({...newPatient, dni: e.target.value})} />
+              {/* Si estamos editando, el DNI suele ser fijo (PK) */}
+              <input 
+                type="number" placeholder="DNI" 
+                className={`w-full p-3 border border-slate-200 rounded-xl ${isEditing ? 'bg-slate-50 text-slate-400' : ''}`}
+                value={patientForm.dni}
+                disabled={isEditing}
+                required
+                onChange={e => setPatientForm({...patientForm, dni: e.target.value})} 
+              />
               
               <div className="flex gap-4">
                 <input type="text" placeholder="Nombre" className="w-1/2 p-3 border border-slate-200 rounded-xl" required
-                  onChange={e => setNewPatient({...newPatient, nombre: e.target.value})} />
+                  value={patientForm.nombre}
+                  onChange={e => setPatientForm({...patientForm, nombre: e.target.value})} />
                 <input type="text" placeholder="Apellido" className="w-1/2 p-3 border border-slate-200 rounded-xl" required
-                  onChange={e => setNewPatient({...newPatient, apellido: e.target.value})} />
+                  value={patientForm.apellido}
+                  onChange={e => setPatientForm({...patientForm, apellido: e.target.value})} />
               </div>
 
               <input type="text" placeholder="Dirección" className="w-full p-3 border border-slate-200 rounded-xl"
-                onChange={e => setNewPatient({...newPatient, direccion: e.target.value})} />
+                value={patientForm.direccion || ''}
+                onChange={e => setPatientForm({...patientForm, direccion: e.target.value})} />
               
               <input type="text" placeholder="Teléfono" className="w-full p-3 border border-slate-200 rounded-xl"
-                onChange={e => setNewPatient({...newPatient, telefono: e.target.value})} />
+                value={patientForm.telefono || ''}
+                onChange={e => setPatientForm({...patientForm, telefono: e.target.value})} />
 
-              <button type="submit" className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold mt-4">
-                Guardar Paciente
+              <button type="submit" className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-emerald-200">
+                {isEditing ? 'Actualizar Datos' : 'Guardar Paciente'}
               </button>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
