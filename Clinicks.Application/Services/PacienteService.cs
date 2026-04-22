@@ -29,11 +29,23 @@ namespace Clinicks.Application.Services
             return await _context.Pacientes.FindAsync(dni);
         }
 
-        public async Task CreateAsync(Paciente paciente)
+        public async Task<bool> CreateAsync(Paciente paciente)
         {
-            // Acá podrías meter una validación: si el DNI ya existe, tirar un error.
+            // 1. Atajamos el problema antes de que llegue a SQL
+            // Buscamos si ya existe alguien con ese DNI
+            var existe = await _context.Pacientes.AnyAsync(p => p.Dni == paciente.Dni);
+
+            if (existe)
+            {
+                // Si ya existe, no hacemos nada y devolvemos false
+                return false;
+            }
+
+            // 2. Si llegamos acá, es porque el DNI está libre
             _context.Pacientes.Add(paciente);
             await _context.SaveChangesAsync();
+
+            return true; // Todo joya, creado con éxito
         }
 
         public async Task<bool> UpdateAsync(Paciente paciente)

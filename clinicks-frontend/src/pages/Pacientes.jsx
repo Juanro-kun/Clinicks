@@ -42,24 +42,42 @@ export default function Pacientes() {
 
   // 3. GUARDAR (POST o PUT)
   const handleSave = async (e) => {
-    e.preventDefault()
-    try {
-      if (isEditing) {
-        // Si estamos editando, mandamos PUT a /Pacientes/{dni}
-        await api.put(`/Pacientes/${patientForm.dni}`, patientForm)
-      } else {
-        // Si no, mandamos el POST de siempre
-        await api.post('/Pacientes', patientForm)
-      }
-      closeModal()
-      fetchPacientes()
-    } catch (err) {
-      alert("Hubo un error al procesar la solicitud.")
-    }
-  }
+        e.preventDefault();
+
+        // 1. Validaciones manuales rápidas
+        if (patientForm.dni.toString().length < 7 || patientForm.dni.toString().length > 8) {
+            alert("DNI invalido");
+            return;
+        }
+
+        if (patientForm.nombre.trim().length < 2 || patientForm.apellido.trim().length < 1) {
+            alert("Nombre o Apellido muy corto");
+            return;
+        }
+
+        // 2. Si pasó los filtros, recién ahí vamos a la API
+        try {
+            if (isEditing) {
+                await api.put(`/Pacientes/${patientForm.dni}`, patientForm);
+            } else {
+                await api.post('/Pacientes', patientForm);
+            }
+            closeModal();
+            fetchPacientes();
+        } catch (err) {
+            console.log("Error completo:", err.response); // Esto miralo en la consola (F12)
+            
+            // Si la API mandó un objeto, lo convertimos a texto para el alert
+            const mensajeError = err.response?.data 
+                ? JSON.stringify(err.response.data) 
+                : err.message;
+                
+            alert("Error detallado: " + mensajeError);
+        }
+    };
 
   const handleDelete = async (dni) => {
-    if (window.confirm("¿Seguro que querés borrar a este paciente?")) {
+    if (window.confirm("¿Esta seguro de eliminar a este paciente? Sus datos no se podrán recuperar")) {
       try {
         await api.delete(`/Pacientes/${dni}`)
         setPatients(patients.filter(p => p.dni !== dni))

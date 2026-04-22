@@ -58,7 +58,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Pegá tu token acá abajo (sin la palabra Bearer, solo el choclo de letras)"
+        Description = "Pegá tu token acá abajo"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement

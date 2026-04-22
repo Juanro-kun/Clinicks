@@ -11,7 +11,7 @@ namespace Clinicks.Application.Interfaces
     {
         Task<IEnumerable<Paciente>> GetAllAsync();
         Task<Paciente?> GetByDniAsync(int dni);
-        Task CreateAsync(Paciente paciente);
+        Task<bool> CreateAsync(Paciente paciente);
         Task<bool> UpdateAsync(Paciente paciente);
         Task DeleteAsync(int dni);
     }

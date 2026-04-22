@@ -34,7 +34,7 @@ namespace Clinicks.API.Controllers
         public async Task<IActionResult> GetByDni(int dni)
         {
             var paciente = await _pacienteService.GetByDniAsync(dni);
-            if (paciente == null) return NotFound("Paciente no encontrado, wacho.");
+            if (paciente == null) return NotFound("Paciente no encontrado");
 
             return Ok(paciente);
         }
@@ -42,8 +42,14 @@ namespace Clinicks.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Paciente paciente)
         {
-            await _pacienteService.CreateAsync(paciente);
-            return Ok("Paciente creado con éxito en la clinicks_bd!");
+            var creado = await _pacienteService.CreateAsync(paciente);
+
+            if (!creado)
+            {
+                return Conflict("El DNI ya se encuentra registrado.");
+            }
+
+            return CreatedAtAction(nameof(Create), new { id = paciente.Dni }, paciente);
         }
 
         [HttpDelete("{dni}")]
@@ -64,7 +70,7 @@ namespace Clinicks.API.Controllers
 
             if (!actualizado)
             {
-                return NotFound($"No encontré ningún paciente con DNI {dni}");
+                return NotFound($"No se encontró ningún paciente con DNI {dni}");
             }
 
             return NoContent(); // 204: "Todo bien, no tengo nada más que decirte"
