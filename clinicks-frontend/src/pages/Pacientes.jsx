@@ -124,42 +124,53 @@ export default function Pacientes() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left">
-          <thead>
+            <thead>
             <tr className="bg-slate-50/50 border-b border-slate-200">
-              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">DNI</th>
-              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Nombre</th>
-              <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase text-right">Acciones</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">DNI</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Nombre</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Dirección</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Teléfono</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase text-right">Acciones</th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+            </thead>
+            <tbody className="divide-y divide-slate-100">
             {filteredPatients.map((p) => (
-              <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-8 py-5 text-sm font-bold text-slate-700">{p.dni}</td>
-                <td className="px-8 py-5 text-sm text-slate-600 font-medium">{p.nombre} {p.apellido}</td>
-                <td className="px-8 py-5 text-right">
-                  <div className="flex justify-end gap-2">
-                    {/* BOTÓN EDITAR */}
-                    <button 
-                      onClick={() => handleEditRequest(p)}
-                      className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(p.dni)}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                <td className="px-8 py-5 text-sm text-slate-600 font-medium">
+                    {p.nombre} {p.apellido}
                 </td>
-              </tr>
+                {/* Columna de Dirección */}
+                <td className="px-8 py-5 text-sm text-slate-500 italic">
+                    {p.direccion || <span className="text-slate-300">No cargada</span>}
+                </td>
+                {/* Columna de Teléfono */}
+                <td className="px-8 py-5 text-sm text-slate-500 font-mono">
+                    {p.telefono || <span className="text-slate-300">---</span>}
+                </td>
+                <td className="px-8 py-5 text-right">
+                    <div className="flex justify-end gap-2">
+                    <button 
+                        onClick={() => handleEditRequest(p)}
+                        className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => handleDelete(p.dni)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                    </div>
+                </td>
+                </tr>
             ))}
-          </tbody>
+            </tbody>
         </table>
-      </div>
+        </div>
 
       {/* MODAL REUTILIZABLE */}
       {isModalOpen && (
@@ -180,14 +191,17 @@ export default function Pacientes() {
                 value={patientForm.dni}
                 disabled={isEditing}
                 required
-                onChange={e => setPatientForm({...patientForm, dni: e.target.value})} 
-              />
+                maxLength={8}
+                onChange={e =>{
+                    const valorLimpio = e.target.value.replace(/\D/g, '');
+                    setPatientForm({...patientForm, dni: valorLimpio}) 
+                }}/>
               
               <div className="flex gap-4">
-                <input type="text" placeholder="Nombre" className="w-1/2 p-3 border border-slate-200 rounded-xl" required
+                <input type="text" placeholder="Nombre" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl" required
                   value={patientForm.nombre}
                   onChange={e => setPatientForm({...patientForm, nombre: e.target.value})} />
-                <input type="text" placeholder="Apellido" className="w-1/2 p-3 border border-slate-200 rounded-xl" required
+                <input type="text" placeholder="Apellido" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl" required
                   value={patientForm.apellido}
                   onChange={e => setPatientForm({...patientForm, apellido: e.target.value})} />
               </div>
@@ -196,15 +210,23 @@ export default function Pacientes() {
                 value={patientForm.direccion || ''}
                 onChange={e => setPatientForm({...patientForm, direccion: e.target.value})} />
               
-              <input type="text" placeholder="Teléfono" className="w-full p-3 border border-slate-200 rounded-xl"
+              <input 
+                type="tel" 
+                placeholder="Teléfono" 
+                className="w-full p-3 border border-slate-200 rounded-xl"
                 value={patientForm.telefono || ''}
-                onChange={e => setPatientForm({...patientForm, telefono: e.target.value})} />
+                onChange={e => {
+                    const valorLimpio2 = e.target.value.replace(/\D/g, '');
+                    setPatientForm({ ...patientForm, telefono: valorLimpio2 });
+                }} />
 
               <button type="submit" className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-emerald-200">
                 {isEditing ? 'Actualizar Datos' : 'Guardar Paciente'}
               </button>
             </form>
           </div>
+
+          
         </div>
       )}
     </>
