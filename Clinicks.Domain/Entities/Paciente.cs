@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -18,9 +18,33 @@ public partial class Paciente
     [StringLength(50, MinimumLength = 1, ErrorMessage = "El apellido debe tener entre 1 y 50 caracteres.")]
     public string Apellido { get; set; } = null!;
 
-    [StringLength(255, ErrorMessage = "La dirección es demasiado larga.")]
-    public string? Direccion { get; set; }
+    public int? IdDireccion { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public virtual Direccion? DireccionNavigation { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public virtual ICollection<Internacion> Internaciones { get; set; } = new List<Internacion>();
 
     [Phone(ErrorMessage = "El formato del teléfono no es válido.")]
     public string? Telefono { get; set; }
+
+    // Propiedades para recibir los datos desde el frontend sin guardarlos directamente en la tabla Paciente
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? Calle { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public int? Altura { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? CiudadNombre { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? ProvinciaNombre { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? PaisNombre { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool EstaInternado { get; set; }
 }
