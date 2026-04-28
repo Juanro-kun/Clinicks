@@ -6,20 +6,23 @@ using Clinicks.Application.Context;
 using Clinicks.Application.Interfaces;
 using Clinicks.Application.Services;
 using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. CONFIGURACIÓN DE SERVICIOS (Dependency Injection) ---
+// --- 1. CONFIGURACION DE SERVICIOS (Dependency Injection) ---
 
-// Base de Datos: Conexión con SQL Server
+// Base de Datos: Conexion con SQL Server
 builder.Services.AddDbContext<ClinicksDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Servicios de Negocio: Registramos el CRUD de Pacientes y el de Auth
 builder.Services.AddScoped<IPacienteService, PacienteService>();
+builder.Services.AddScoped<IHabitacionService, HabitacionService>();
+builder.Services.AddScoped<IInternacionService, InternacionService>();
 builder.Services.AddScoped<AuthService>();
 
-// Seguridad JWT: Le enseñamos a la API a validar el "pasaporte" (Token)
+// Seguridad JWT: Le ensenamos a la API a validar el "pasaporte" (Token)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -44,7 +47,12 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -58,7 +66,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Pegá tu token acá abajo"
+        Description = "Pega tu token aca abajo"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -79,7 +87,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// --- 2. CONFIGURACIÓN DEL PIPELINE (Orden de ejecución) ---
+// --- 2. CONFIGURACION DEL PIPELINE (Orden de ejecucion) ---
 
 if (app.Environment.IsDevelopment())
 {
@@ -89,13 +97,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// EL ORDEN ACÁ ABAJO ES VIDA O MUERTE:
+// EL ORDEN ACA ABAJO ES VIDA O MUERTE:
 app.UseRouting(); // Organiza las rutas
 
-app.UseCors("AllowReactApp"); // 1° ¿Viene de un origen permitido?
+app.UseCors("AllowReactApp"); // 1ro Viene de un origen permitido?
 
-app.UseAuthentication(); // 2° ¿Quién sos? (Valida el Token)
-app.UseAuthorization();  // 3° ¿Tenés permiso? (Valida el rol/acceso)
+app.UseAuthentication(); // 2do Quien sos? (Valida el Token)
+app.UseAuthorization();  // 3ro Tenes permiso? (Valida el rol/acceso)
 
 app.MapControllers();
 

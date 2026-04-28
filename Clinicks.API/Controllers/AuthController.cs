@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Clinicks.Application.Services;
 
 namespace Clinicks.API.Controllers
@@ -17,7 +17,7 @@ namespace Clinicks.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var token = await _authService.LoginAsync(request.Username, request.Password);
+            var token = await _authService.IniciarSesion(request.Username, request.Password);
 
             if (token == null)
                 return Unauthorized("Usuario o contraseña incorrectos, wacho.");

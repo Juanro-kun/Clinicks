@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Plus, Search, LogOut, Users, ClipboardList, X, Trash2, Pencil } from "lucide-react"
+import { Plus, Search, LogOut, Users, ClipboardList, X, Trash2, Pencil, BedDouble } from "lucide-react"
 import api from "../api/api"
 import { useNavigate } from "react-router-dom"
 
@@ -11,11 +11,21 @@ export default function Pacientes() {
   // Estado para saber si estamos editando o creando uno nuevo
   const [isEditing, setIsEditing] = useState(false)
   
-  const [patientForm, setPatientForm] = useState({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' })
+  const [patientForm, setPatientForm] = useState({ 
+    dni: '', nombre: '', apellido: '', telefono: '',
+    calle: '', altura: '', ciudadNombre: '', provinciaNombre: '', paisNombre: '' 
+  })
+  
+  // Estados para Internación
+  const [isInternarModalOpen, setIsInternarModalOpen] = useState(false)
+  const [pacienteAInternar, setPacienteAInternar] = useState(null)
+  const [habitacionesList, setHabitacionesList] = useState([])
+  const [camasList, setCamasList] = useState([])
+  const [internarForm, setInternarForm] = useState({ idHabitacion: '', nCama: '' })
   
   const navigate = useNavigate()
 
-  const fetchPacientes = async () => {
+  const obtenerListaDePacientes = async () => {
     try {
       const res = await api.get('/Pacientes')
       setPatients(res.data)
@@ -24,24 +34,64 @@ export default function Pacientes() {
     }
   }
 
-  useEffect(() => { fetchPacientes() }, [])
+  useEffect(() => { obtenerListaDePacientes() }, [])
 
   // 1. FUNCIÓN PARA PREPARAR LA EDICIÓN
-  const handleEditRequest = (p) => {
+  const prepararEdicionDePaciente = (p) => {
     setPatientForm(p) // Cargamos los datos del paciente en el form
     setIsEditing(true) // Activamos modo edición
     setIsModalOpen(true) // Abrimos el modal
   }
 
   // 2. FUNCIÓN PARA CERRAR Y LIMPIAR
-  const closeModal = () => {
+  const cerrarFormularioPaciente = () => {
     setIsModalOpen(false)
     setIsEditing(false)
-    setPatientForm({ dni: '', nombre: '', apellido: '', direccion: '', telefono: '' })
+    setPatientForm({ 
+      dni: '', nombre: '', apellido: '', telefono: '',
+      calle: '', altura: '', ciudadNombre: '', provinciaNombre: '', paisNombre: '' 
+    })
+  }
+
+  // LÓGICA DE INTERNACIÓN
+  const abrirModalInternacion = async (p) => {
+    setPacienteAInternar(p)
+    setIsInternarModalOpen(true)
+    setInternarForm({ idHabitacion: '', nCama: '' })
+    
+    try {
+      const resHab = await api.get('/Habitaciones')
+      setHabitacionesList(resHab.data)
+      const resCam = await api.get('/Habitaciones/camas')
+      // Solo guardamos camas libres
+      setCamasList(resCam.data.filter(c => !c.estaOcupada))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const confirmarInternacion = async (e) => {
+    e.preventDefault()
+    if(!internarForm.idHabitacion || !internarForm.nCama) {
+        alert("Seleccione habitación y cama")
+        return
+    }
+    
+    try {
+        await api.post('/Internaciones/internar', {
+            dni: pacienteAInternar.dni,
+            idHabitacion: parseInt(internarForm.idHabitacion),
+            nCama: parseInt(internarForm.nCama)
+        })
+        alert("¡Paciente internado con éxito!")
+        setIsInternarModalOpen(false)
+    } catch(err) {
+        alert(err.response?.data || "Error al internar")
+    }
   }
 
   // 3. GUARDAR (POST o PUT)
-  const handleSave = async (e) => {
+  const registrarOActualizarPaciente = async (e) => {
         e.preventDefault();
 
         // 1. Validaciones manuales rápidas
@@ -62,8 +112,8 @@ export default function Pacientes() {
             } else {
                 await api.post('/Pacientes', patientForm);
             }
-            closeModal();
-            fetchPacientes();
+            cerrarFormularioPaciente();
+            obtenerListaDePacientes();
         } catch (err) {
             console.log("Error completo:", err.response); // Esto miralo en la consola (F12)
             
@@ -76,7 +126,7 @@ export default function Pacientes() {
         }
     };
 
-  const handleDelete = async (dni) => {
+  const eliminarRegistroPaciente = async (dni) => {
     if (window.confirm("¿Esta seguro de eliminar a este paciente? Sus datos no se podrán recuperar")) {
       try {
         await api.delete(`/Pacientes/${dni}`)
@@ -130,7 +180,6 @@ export default function Pacientes() {
             <tr className="bg-slate-50/50 border-b border-slate-200">
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">DNI</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Nombre</th>
-                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Dirección</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Teléfono</th>
                 <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase text-right">Acciones</th>
             </tr>
@@ -139,12 +188,17 @@ export default function Pacientes() {
             {filteredPatients.map((p) => (
                 <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-8 py-5 text-sm font-bold text-slate-700">{p.dni}</td>
-                <td className="px-8 py-5 text-sm text-slate-600 font-medium">
-                    {p.nombre} {p.apellido}
-                </td>
-                {/* Columna de Dirección */}
-                <td className="px-8 py-5 text-sm text-slate-500 italic">
-                    {p.direccion || <span className="text-slate-300">No cargada</span>}
+                <td className="px-8 py-5">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-slate-600 font-medium">
+                            {p.nombre} {p.apellido}
+                        </span>
+                        {p.estaInternado && (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-600 text-[10px] font-bold uppercase tracking-wider">
+                                Internado
+                            </span>
+                        )}
+                    </div>
                 </td>
                 {/* Columna de Teléfono */}
                 <td className="px-8 py-5 text-sm text-slate-500 font-mono">
@@ -153,14 +207,23 @@ export default function Pacientes() {
                 <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-2">
                     <button 
-                        onClick={() => handleEditRequest(p)}
+                        onClick={() => abrirModalInternacion(p)}
+                        className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Internar"
+                    >
+                        <BedDouble className="w-4 h-4" />
+                    </button>
+                    <button 
+                        onClick={() => prepararEdicionDePaciente(p)}
                         className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                        title="Editar"
                     >
                         <Pencil className="w-4 h-4" />
                     </button>
                     <button 
-                        onClick={() => handleDelete(p.dni)}
+                        onClick={() => eliminarRegistroPaciente(p.dni)}
                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Eliminar"
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>
@@ -180,10 +243,10 @@ export default function Pacientes() {
               <h2 className="text-2xl font-bold text-slate-800">
                 {isEditing ? 'Editar Paciente' : 'Nuevo Paciente'}
               </h2>
-              <button onClick={closeModal}><X className="text-slate-400" /></button>
+              <button onClick={cerrarFormularioPaciente}><X className="text-slate-400" /></button>
             </div>
             
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={registrarOActualizarPaciente} className="space-y-4">
               {/* Si estamos editando, el DNI suele ser fijo (PK) */}
               <input 
                 type="number" placeholder="DNI" 
@@ -206,9 +269,26 @@ export default function Pacientes() {
                   onChange={e => setPatientForm({...patientForm, apellido: e.target.value})} />
               </div>
 
-              <input type="text" placeholder="Dirección" className="w-full p-3 border border-slate-200 rounded-xl"
-                value={patientForm.direccion || ''}
-                onChange={e => setPatientForm({...patientForm, direccion: e.target.value})} />
+              <div className="flex gap-4">
+                <input type="text" placeholder="Calle" className="w-2/3 p-3 border border-slate-200 rounded-xl"
+                  value={patientForm.calle || ''}
+                  onChange={e => setPatientForm({...patientForm, calle: e.target.value})} />
+                <input type="number" placeholder="Altura" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                  value={patientForm.altura || ''}
+                  onChange={e => setPatientForm({...patientForm, altura: e.target.value})} />
+              </div>
+
+              <div className="flex gap-4">
+                <input type="text" placeholder="Ciudad" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                  value={patientForm.ciudadNombre || ''}
+                  onChange={e => setPatientForm({...patientForm, ciudadNombre: e.target.value})} />
+                <input type="text" placeholder="Provincia" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                  value={patientForm.provinciaNombre || ''}
+                  onChange={e => setPatientForm({...patientForm, provinciaNombre: e.target.value})} />
+                <input type="text" placeholder="País" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                  value={patientForm.paisNombre || ''}
+                  onChange={e => setPatientForm({...patientForm, paisNombre: e.target.value})} />
+              </div>
               
               <input 
                 type="tel" 
@@ -225,8 +305,69 @@ export default function Pacientes() {
               </button>
             </form>
           </div>
+        </div>
+      )}
 
-          
+      {/* MODAL DE INTERNACIÓN */}
+      {isInternarModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">
+                Internar Paciente
+              </h2>
+              <button onClick={() => setIsInternarModalOpen(false)}><X className="text-slate-400" /></button>
+            </div>
+            
+            <p className="text-slate-600 mb-6">
+              Asignar cama para: <strong>{pacienteAInternar?.nombre} {pacienteAInternar?.apellido}</strong> (DNI: {pacienteAInternar?.dni})
+            </p>
+
+            <form onSubmit={confirmarInternacion} className="space-y-4">
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Habitación</label>
+                <select 
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={internarForm.idHabitacion}
+                  onChange={(e) => setInternarForm({ idHabitacion: e.target.value, nCama: '' })}
+                  required
+                >
+                  <option value="">Seleccione una habitación</option>
+                  {habitacionesList.map(h => (
+                    <option key={h.idHabitacion} value={h.idHabitacion}>{h.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Cama Disponible</label>
+                <select 
+                  className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-50"
+                  value={internarForm.nCama}
+                  onChange={(e) => setInternarForm({ ...internarForm, nCama: e.target.value })}
+                  disabled={!internarForm.idHabitacion}
+                  required
+                >
+                  <option value="">Seleccione una cama libre</option>
+                  {camasList
+                    .filter(c => c.idHabitacion.toString() === internarForm.idHabitacion)
+                    .map(c => (
+                      <option key={`${c.idHabitacion}-${c.nCama}`} value={c.nCama}>
+                        Cama {c.nCama}
+                      </option>
+                  ))}
+                </select>
+                {internarForm.idHabitacion && camasList.filter(c => c.idHabitacion.toString() === internarForm.idHabitacion).length === 0 && (
+                    <p className="text-rose-500 text-sm mt-2">No hay camas libres en esta habitación.</p>
+                )}
+              </div>
+
+              <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 transition-colors text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-blue-200">
+                Confirmar Internación
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </>

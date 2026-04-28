@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Users, Bed, ArrowLeftRight, LogOut, LayoutDashboard } from 'lucide-react';
+import { Users, Bed, Stethoscope, LogOut, LayoutDashboard, ClipboardList } from 'lucide-react';
 
 
 const Layout = () => {
@@ -30,11 +30,11 @@ const Layout = () => {
                     </div>
                 </div>
                 
-                {/* Navegación: Cambiamos space-y-2 por space-y-6 para separar los botones entre sí */}
-                <nav className="flex flex-col space-y-80 flex-1 gap-y-6 ">
+                {/* Navegación: usamos gap-y-6 para separar los botones entre sí */}
+                <nav className="flex flex-col flex-1 gap-y-6">
                     <Link 
                         to="/pacientes" 
-                        className={`flex items-center gap-5 px-6 py-1 rounded-[1.5rem] font-bold transition-all mb-100 ${
+                        className={`flex items-center gap-5 px-6 py-3 rounded-[1.5rem] font-bold transition-all ${
                             isActive('/pacientes') 
                             ? 'text-emerald-600 bg-emerald-50 shadow-sm shadow-emerald-100/30' 
                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
@@ -44,16 +44,44 @@ const Layout = () => {
                         <span className="text-lg">Pacientes</span>
                     </Link>
 
-                    {/* Botones desactivados con el mismo padding py-5 */}
-                    <div className="flex items-center gap-5 px-6 py-5 mb-80 text-slate-300 cursor-not-allowed">
-                        <Bed className="w-6 h-6" /> 
-                        <span className="text-lg font-semibold">Camas</span>
-                    </div>
+                    {/* Botón Habitaciones */}
+                    <Link 
+                        to="/habitaciones" 
+                        className={`flex items-center gap-5 px-6 py-3 rounded-[1.5rem] font-bold transition-all ${
+                            isActive('/habitaciones') 
+                            ? 'text-emerald-600 bg-emerald-50 shadow-sm shadow-emerald-100/30' 
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <Bed className={`w-6 h-6 ${isActive('/habitaciones') ? 'text-emerald-500' : ''}`} /> 
+                        <span className="text-lg">Habitaciones</span>
+                    </Link>
 
-                    <div className="flex items-center gap-5 px-6 py-5 my-5 text-slate-300 cursor-not-allowed">
-                        <ArrowLeftRight className="w-6 h-6" /> 
-                        <span className="text-lg font-semibold">Ingresos</span>
-                    </div>
+                    {/* Botón Internaciones */}
+                    <Link 
+                        to="/internaciones" 
+                        className={`flex items-center gap-5 px-6 py-3 rounded-[1.5rem] font-bold transition-all ${
+                            isActive('/internaciones') 
+                            ? 'text-emerald-600 bg-emerald-50 shadow-sm shadow-emerald-100/30' 
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <ClipboardList className={`w-6 h-6 ${isActive('/internaciones') ? 'text-emerald-500' : ''}`} /> 
+                        <span className="text-lg">Internaciones</span>
+                    </Link>
+
+                    {/* Botón Médicos */}
+                    <Link 
+                        to="/medicos" 
+                        className={`flex items-center gap-5 px-6 py-3 rounded-[1.5rem] font-bold transition-all ${
+                            isActive('/medicos') 
+                            ? 'text-emerald-600 bg-emerald-50 shadow-sm shadow-emerald-100/30' 
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <Stethoscope className={`w-6 h-6 ${isActive('/medicos') ? 'text-emerald-500' : ''}`} /> 
+                        <span className="text-lg">Médicos</span>
+                    </Link>
                 </nav>
 
                 {/* Logout con más aire arriba */}

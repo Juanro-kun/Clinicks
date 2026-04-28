@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,7 +26,7 @@ namespace Clinicks.Application.Services
             _config = config;
         }
 
-        public async Task<string?> LoginAsync(string username, string password)
+        public async Task<string?> IniciarSesion(string username, string password)
         {
             var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Nombre == username);
 
