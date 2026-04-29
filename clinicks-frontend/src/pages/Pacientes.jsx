@@ -15,6 +15,12 @@ export default function Pacientes() {
     dni: '', nombre: '', apellido: '', telefono: '',
     calle: '', altura: '', ciudadNombre: '', provinciaNombre: '', paisNombre: '' 
   })
+
+  // Listas para autocompletado
+  const [callesList, setCallesList] = useState([])
+  const [ciudadesList, setCiudadesList] = useState([])
+  const [provinciasList, setProvinciasList] = useState([])
+  const [paisesList, setPaisesList] = useState([])
   
   // Estados para Internación
   const [isInternarModalOpen, setIsInternarModalOpen] = useState(false)
@@ -34,7 +40,27 @@ export default function Pacientes() {
     }
   }
 
-  useEffect(() => { obtenerListaDePacientes() }, [])
+  const obtenerListasDeUbicaciones = async () => {
+    try {
+      const [resCalles, resCiudades, resProvincias, resPaises] = await Promise.all([
+        api.get('/Ubicaciones/calles'),
+        api.get('/Ubicaciones/ciudades'),
+        api.get('/Ubicaciones/provincias'),
+        api.get('/Ubicaciones/paises')
+      ])
+      setCallesList(resCalles.data)
+      setCiudadesList(resCiudades.data)
+      setProvinciasList(resProvincias.data)
+      setPaisesList(resPaises.data)
+    } catch (err) {
+      console.error("Error al obtener ubicaciones", err)
+    }
+  }
+
+  useEffect(() => { 
+    obtenerListaDePacientes();
+    obtenerListasDeUbicaciones();
+  }, [])
 
   // 1. FUNCIÓN PARA PREPARAR LA EDICIÓN
   const prepararEdicionDePaciente = (p) => {
@@ -90,6 +116,14 @@ export default function Pacientes() {
     }
   }
 
+  // Capitaliza la primera letra de cada palabra
+  const capitalizarPalabras = (texto) => {
+    if (!texto) return '';
+    return texto.toLowerCase().split(' ').map(palabra => 
+        palabra.charAt(0).toUpperCase() + palabra.slice(1)
+    ).join(' ');
+  }
+
   // 3. GUARDAR (POST o PUT)
   const registrarOActualizarPaciente = async (e) => {
         e.preventDefault();
@@ -105,15 +139,25 @@ export default function Pacientes() {
             return;
         }
 
+        // Formatear ubicaciones para que tengan la primera letra mayúscula
+        const formAEnviar = {
+            ...patientForm,
+            calle: capitalizarPalabras(patientForm.calle),
+            ciudadNombre: capitalizarPalabras(patientForm.ciudadNombre),
+            provinciaNombre: capitalizarPalabras(patientForm.provinciaNombre),
+            paisNombre: capitalizarPalabras(patientForm.paisNombre)
+        };
+
         // 2. Si pasó los filtros, recién ahí vamos a la API
         try {
             if (isEditing) {
-                await api.put(`/Pacientes/${patientForm.dni}`, patientForm);
+                await api.put(`/Pacientes/${patientForm.dni}`, formAEnviar);
             } else {
-                await api.post('/Pacientes', patientForm);
+                await api.post('/Pacientes', formAEnviar);
             }
             cerrarFormularioPaciente();
             obtenerListaDePacientes();
+            obtenerListasDeUbicaciones(); // Refrescar las listas por si se agregó algo nuevo
         } catch (err) {
             console.log("Error completo:", err.response); // Esto miralo en la consola (F12)
             
@@ -270,24 +314,39 @@ export default function Pacientes() {
               </div>
 
               <div className="flex gap-4">
-                <input type="text" placeholder="Calle" className="w-2/3 p-3 border border-slate-200 rounded-xl"
+                <input type="text" placeholder="Calle" list="calles-datalist" className="w-2/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.calle || ''}
                   onChange={e => setPatientForm({...patientForm, calle: e.target.value})} />
+                <datalist id="calles-datalist">
+                  {callesList.map(c => <option key={c} value={c} />)}
+                </datalist>
+
                 <input type="number" placeholder="Altura" className="w-1/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.altura || ''}
                   onChange={e => setPatientForm({...patientForm, altura: e.target.value})} />
               </div>
 
               <div className="flex gap-4">
-                <input type="text" placeholder="Ciudad" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                <input type="text" placeholder="Ciudad" list="ciudades-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.ciudadNombre || ''}
                   onChange={e => setPatientForm({...patientForm, ciudadNombre: e.target.value})} />
-                <input type="text" placeholder="Provincia" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                <datalist id="ciudades-datalist">
+                  {ciudadesList.map(c => <option key={c} value={c} />)}
+                </datalist>
+
+                <input type="text" placeholder="Provincia" list="provincias-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.provinciaNombre || ''}
                   onChange={e => setPatientForm({...patientForm, provinciaNombre: e.target.value})} />
-                <input type="text" placeholder="País" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                <datalist id="provincias-datalist">
+                  {provinciasList.map(p => <option key={p} value={p} />)}
+                </datalist>
+
+                <input type="text" placeholder="País" list="paises-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.paisNombre || ''}
                   onChange={e => setPatientForm({...patientForm, paisNombre: e.target.value})} />
+                <datalist id="paises-datalist">
+                  {paisesList.map(p => <option key={p} value={p} />)}
+                </datalist>
               </div>
               
               <input 

@@ -20,6 +20,7 @@ builder.Services.AddDbContext<ClinicksDbContext>(options =>
 builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IHabitacionService, HabitacionService>();
 builder.Services.AddScoped<IInternacionService, InternacionService>();
+builder.Services.AddScoped<IUbicacionService, UbicacionService>();
 builder.Services.AddScoped<AuthService>();
 
 // Seguridad JWT: Le ensenamos a la API a validar el "pasaporte" (Token)
