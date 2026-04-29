@@ -157,19 +157,34 @@ public class InternacionService : IInternacionService
 
     private async Task GuardarNuevaInternacion(Internacion nuevaInternacion, Cama cama)
     {
-        _context.Internaciones.Add(nuevaInternacion);
-        await _context.SaveChangesAsync();
+        await RegistrarInternacion(nuevaInternacion);
 
         var nuevoIngreso = new Ingreso
         {
             IdInternacion = nuevaInternacion.IdInternacion,
             Fecha = DateTime.Now
         };
-        _context.Ingresos.Add(nuevoIngreso);
+        await RegistrarIngreso(nuevoIngreso);
 
+        await MarcarCamaComoOcupada(cama);
+    }
+
+    private async Task RegistrarInternacion(Internacion internacion)
+    {
+        _context.Internaciones.Add(internacion);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task RegistrarIngreso(Ingreso ingreso)
+    {
+        _context.Ingresos.Add(ingreso);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task MarcarCamaComoOcupada(Cama cama)
+    {
         cama.Ocupado = "Si";
         _context.Camas.Update(cama);
-
         await _context.SaveChangesAsync();
     }
 }
