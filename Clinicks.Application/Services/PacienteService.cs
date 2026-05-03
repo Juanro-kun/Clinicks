@@ -23,7 +23,7 @@ namespace Clinicks.Application.Services
         {
             var pacientes = await _context.Pacientes
                 .Include(p => p.Internaciones)
-                .Include(p => p.DireccionNavigation)
+                .Include(p => p.Direcciones)
                     .ThenInclude(d => d.CiudadNavigation)
                         .ThenInclude(c => c.ProvinciaNavigation)
                             .ThenInclude(pr => pr.PaisNavigation)
@@ -31,13 +31,14 @@ namespace Clinicks.Application.Services
 
             foreach (var p in pacientes)
             {
-                if (p.DireccionNavigation != null)
+                var direccion = p.Direcciones.FirstOrDefault();
+                if (direccion != null)
                 {
-                    p.Calle = p.DireccionNavigation.Calle;
-                    p.Altura = p.DireccionNavigation.Altura;
-                    p.CiudadNombre = p.DireccionNavigation.CiudadNavigation?.Nombre;
-                    p.ProvinciaNombre = p.DireccionNavigation.CiudadNavigation?.ProvinciaNavigation?.Nombre;
-                    p.PaisNombre = p.DireccionNavigation.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
+                    p.Calle = direccion.Calle;
+                    p.Altura = direccion.Altura;
+                    p.CiudadNombre = direccion.CiudadNavigation?.Nombre;
+                    p.ProvinciaNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.Nombre;
+                    p.PaisNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
                 }
                 
                 // Determinamos si está internado
@@ -51,13 +52,17 @@ namespace Clinicks.Application.Services
         {
             var p = await ObtenerDetallesCompletosDelPaciente(dni);
 
-            if (p != null && p.DireccionNavigation != null)
+            if (p != null)
             {
-                p.Calle = p.DireccionNavigation.Calle;
-                p.Altura = p.DireccionNavigation.Altura;
-                p.CiudadNombre = p.DireccionNavigation.CiudadNavigation?.Nombre;
-                p.ProvinciaNombre = p.DireccionNavigation.CiudadNavigation?.ProvinciaNavigation?.Nombre;
-                p.PaisNombre = p.DireccionNavigation.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
+                var direccion = p.Direcciones.FirstOrDefault();
+                if (direccion != null)
+                {
+                    p.Calle = direccion.Calle;
+                    p.Altura = direccion.Altura;
+                    p.CiudadNombre = direccion.CiudadNavigation?.Nombre;
+                    p.ProvinciaNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.Nombre;
+                    p.PaisNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
+                }
             }
 
             if (p != null)
@@ -72,7 +77,7 @@ namespace Clinicks.Application.Services
         {
             return await _context.Pacientes
                 .Include(pac => pac.Internaciones)
-                .Include(pac => pac.DireccionNavigation)
+                .Include(pac => pac.Direcciones)
                     .ThenInclude(d => d.CiudadNavigation)
                         .ThenInclude(c => c.ProvinciaNavigation)
                             .ThenInclude(pr => pr.PaisNavigation)
@@ -86,25 +91,22 @@ namespace Clinicks.Application.Services
 
         public async Task RegistrarNuevoPaciente(int dni, string nombre, string apellido, string telefono, string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
         {
-            int? idDireccion = null;
-
-            if (!string.IsNullOrWhiteSpace(calle))
-            {
-                await VerificarDireccion(calle, altura, ciudadNombre, provinciaNombre, paisNombre);
-                idDireccion = await GuardarDireccion(calle, altura, ciudadNombre, provinciaNombre, paisNombre);
-            }
-
             var paciente = new Paciente
             {
                 Dni = dni,
                 Nombre = nombre,
                 Apellido = apellido,
-                Telefono = telefono,
-                IdDireccion = idDireccion
+                Telefono = telefono
             };
 
             _context.Pacientes.Add(paciente);
             await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrWhiteSpace(calle))
+            {
+                await VerificarDireccion(calle, altura, ciudadNombre, provinciaNombre, paisNombre);
+                await GuardarDireccion(dni, calle, altura, ciudadNombre, provinciaNombre, paisNombre);
+            }
         }
 
         public async Task<bool> ActualizarDatosPaciente(Paciente paciente)
@@ -112,11 +114,7 @@ namespace Clinicks.Application.Services
             if (!string.IsNullOrWhiteSpace(paciente.Calle) && paciente.Altura.HasValue)
             {
                 await VerificarDireccion(paciente.Calle, paciente.Altura.Value, paciente.CiudadNombre, paciente.ProvinciaNombre, paciente.PaisNombre);
-                paciente.IdDireccion = await GuardarDireccion(paciente.Calle, paciente.Altura.Value, paciente.CiudadNombre, paciente.ProvinciaNombre, paciente.PaisNombre);
-            }
-            else
-            {
-                paciente.IdDireccion = null;
+                await GuardarDireccion(paciente.Dni, paciente.Calle, paciente.Altura.Value, paciente.CiudadNombre, paciente.ProvinciaNombre, paciente.PaisNombre);
             }
 
             _context.Entry(paciente).State = EntityState.Modified;
@@ -150,7 +148,7 @@ namespace Clinicks.Application.Services
             }
         }
 
-        private async Task<int> GuardarDireccion(string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
+        private async Task<int> GuardarDireccion(int dni, string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
         {
             var ciudad = await _context.Ciudades
                 .Include(c => c.ProvinciaNavigation)
@@ -163,7 +161,8 @@ namespace Clinicks.Application.Services
             var direccion = new Direccion { 
                 Calle = calle.Trim(), 
                 Altura = altura, 
-                IdCiudad = ciudad!.IdCiudad 
+                IdCiudad = ciudad!.IdCiudad,
+                Dni = dni
             };
 
             _context.Direcciones.Add(direccion);

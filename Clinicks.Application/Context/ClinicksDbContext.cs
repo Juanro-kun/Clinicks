@@ -48,12 +48,6 @@ public partial class ClinicksDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("apellido");
-            entity.Property(e => e.IdDireccion)
-                .HasColumnName("id_direccion");
-
-            entity.HasOne(d => d.DireccionNavigation).WithMany(p => p.Pacientes)
-                .HasForeignKey(d => d.IdDireccion)
-                .HasConstraintName("FK_Paciente_Direccion");
             entity.Property(e => e.Nombre)
                 .HasMaxLength(50)
                 .IsUnicode(false)
@@ -146,10 +140,15 @@ public partial class ClinicksDbContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("calle");
             entity.Property(e => e.IdCiudad).HasColumnName("id_ciudad");
+            entity.Property(e => e.Dni).HasColumnName("dni");
 
             entity.HasOne(d => d.CiudadNavigation).WithMany(p => p.Direcciones)
                 .HasForeignKey(d => d.IdCiudad)
                 .HasConstraintName("FK__Direccion__id_ci");
+
+            entity.HasOne(d => d.PacienteNavigation).WithMany(p => p.Direcciones)
+                .HasForeignKey(d => d.Dni)
+                .HasConstraintName("FK_Direccion_Paciente");
         });
 
         modelBuilder.Entity<Habitacion>(entity =>

@@ -18,10 +18,8 @@ public partial class Paciente
     [StringLength(50, MinimumLength = 1, ErrorMessage = "El apellido debe tener entre 1 y 50 caracteres.")]
     public string Apellido { get; set; } = null!;
 
-    public int? IdDireccion { get; set; }
-
     [System.Text.Json.Serialization.JsonIgnore]
-    public virtual Direccion? DireccionNavigation { get; set; }
+    public virtual ICollection<Direccion> Direcciones { get; set; } = new List<Direccion>();
 
     [System.Text.Json.Serialization.JsonIgnore]
     public virtual ICollection<Internacion> Internaciones { get; set; } = new List<Internacion>();
