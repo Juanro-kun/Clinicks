@@ -42,11 +42,29 @@ namespace Clinicks.API.Controllers
         [HttpPost]
         public async Task<IActionResult> RegistrarNuevoPaciente(Paciente paciente)
         {
-            var creado = await _pacienteService.ProcesarAltaDePaciente(paciente);
+            var existe = await _pacienteService.ConsultarPaciente(paciente.Dni);
 
-            if (!creado)
+            if (existe)
             {
                 return Conflict("El DNI ya se encuentra registrado.");
+            }
+
+            try
+            {
+                await _pacienteService.RegistrarNuevoPaciente(
+                    paciente.Dni, 
+                    paciente.Nombre, 
+                    paciente.Apellido, 
+                    paciente.Telefono, 
+                    paciente.Calle, 
+                    paciente.Altura ?? 0, 
+                    paciente.CiudadNombre, 
+                    paciente.ProvinciaNombre, 
+                    paciente.PaisNombre);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
 
             return CreatedAtAction(nameof(RegistrarNuevoPaciente), new { id = paciente.Dni }, paciente);

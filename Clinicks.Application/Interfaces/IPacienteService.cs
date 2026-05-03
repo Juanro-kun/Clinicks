@@ -11,7 +11,8 @@ namespace Clinicks.Application.Interfaces
     {
         Task<IEnumerable<Paciente>> ListarPacientes();
         Task<Paciente?> BuscarPacientePorDni(int dni);
-        Task<bool> ProcesarAltaDePaciente(Paciente paciente);
+        Task<bool> ConsultarPaciente(int dni);
+        Task RegistrarNuevoPaciente(int dni, string nombre, string apellido, string telefono, string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre);
         Task<bool> ActualizarDatosPaciente(Paciente paciente);
         Task EliminarPaciente(int dni);
     }

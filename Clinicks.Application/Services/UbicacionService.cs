@@ -16,7 +16,7 @@ namespace Clinicks.Application.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<string>> ListarNombresDePaises()
+        public async Task<IEnumerable<string>> ConsultarPais()
         {
             return await _context.Paises
                 .Where(p => !string.IsNullOrEmpty(p.Nombre))
@@ -26,7 +26,7 @@ namespace Clinicks.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<string>> ListarNombresDeProvincias()
+        public async Task<IEnumerable<string>> ConsultarProvincia()
         {
             return await _context.Provincias
                 .Where(p => !string.IsNullOrEmpty(p.Nombre))
@@ -36,7 +36,7 @@ namespace Clinicks.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<string>> ListarNombresDeCiudades()
+        public async Task<IEnumerable<string>> ConsultarCiudad()
         {
             return await _context.Ciudades
                 .Where(c => !string.IsNullOrEmpty(c.Nombre))
@@ -46,7 +46,7 @@ namespace Clinicks.Application.Services
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<string>> ListarNombresDeCalles()
+        public async Task<IEnumerable<string>> ConsultarCalle()
         {
             return await _context.Direcciones
                 .Where(d => !string.IsNullOrEmpty(d.Calle))

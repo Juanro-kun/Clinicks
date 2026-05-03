@@ -5,9 +5,9 @@ namespace Clinicks.Application.Interfaces
 {
     public interface IUbicacionService
     {
-        Task<IEnumerable<string>> ListarNombresDePaises();
-        Task<IEnumerable<string>> ListarNombresDeProvincias();
-        Task<IEnumerable<string>> ListarNombresDeCiudades();
-        Task<IEnumerable<string>> ListarNombresDeCalles();
+        Task<IEnumerable<string>> ConsultarPais();
+        Task<IEnumerable<string>> ConsultarProvincia();
+        Task<IEnumerable<string>> ConsultarCiudad();
+        Task<IEnumerable<string>> ConsultarCalle();
     }
 }
