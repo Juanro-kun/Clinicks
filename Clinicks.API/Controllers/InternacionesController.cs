@@ -5,7 +5,6 @@ using Clinicks.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Clinicks.API.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 public class InternacionesController : ControllerBase
@@ -20,23 +19,12 @@ public class InternacionesController : ControllerBase
     [HttpPost("internar")]
     public async Task<IActionResult> InternarPaciente([FromBody] InternacionRequestDto request)
     {
-        try
+        var exito = await _internacionService.ProcesarInternacionDePaciente(request);
+        if (exito)
         {
-            var exito = await _internacionService.ProcesarInternacionDePaciente(request);
-            if (exito)
-            {
-                return Ok(new { message = "Paciente internado con éxito." });
-            }
-            return BadRequest("No se pudo internar al paciente.");
+            return Ok(new { message = "Paciente internado con éxito." });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Ocurrió un error interno en el servidor.");
-        }
+        return BadRequest("No se pudo internar al paciente.");
     }
 
     [HttpGet("activas")]
@@ -49,22 +37,11 @@ public class InternacionesController : ControllerBase
     [HttpPost("{id}/alta")]
     public async Task<IActionResult> DarDeAlta(int id)
     {
-        try
+        var exito = await _internacionService.ProcesarAltaMedica(id);
+        if (exito)
         {
-            var exito = await _internacionService.ProcesarAltaMedica(id);
-            if (exito)
-            {
-                return Ok(new { message = "Paciente dado de alta exitosamente." });
-            }
-            return NotFound("Internación no encontrada.");
+            return Ok(new { message = "Paciente dado de alta exitosamente." });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Ocurrió un error interno en el servidor al dar de alta.");
-        }
+        return NotFound("Internación no encontrada.");
     }
 }

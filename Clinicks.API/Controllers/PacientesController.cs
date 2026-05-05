@@ -1,3 +1,4 @@
+using Clinicks.Application.DTOs.Pacientes;
 using Clinicks.Application.Interfaces;
 using Clinicks.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,6 @@ namespace Clinicks.API.Controllers
         private readonly IPacienteService _pacienteService;
 
         // Inyectamos la Interfaz, no la clase directamente. 
-        // Esto es "Desacoplamiento", clave para que el código sea pro.
         public PacientesController(IPacienteService pacienteService)
         {
             _pacienteService = pacienteService;
@@ -40,34 +40,10 @@ namespace Clinicks.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegistrarNuevoPaciente(Paciente paciente)
+        public async Task<IActionResult> RegistrarNuevoPaciente(PacienteCreateDTO paciente)
         {
-            var existe = await _pacienteService.ConsultarPaciente(paciente.Dni);
-
-            if (existe)
-            {
-                return Conflict("El DNI ya se encuentra registrado.");
-            }
-
-            try
-            {
-                await _pacienteService.RegistrarNuevoPaciente(
-                    paciente.Dni, 
-                    paciente.Nombre, 
-                    paciente.Apellido, 
-                    paciente.Telefono, 
-                    paciente.Calle, 
-                    paciente.Altura ?? 0, 
-                    paciente.CiudadNombre, 
-                    paciente.ProvinciaNombre, 
-                    paciente.PaisNombre);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-
-            return CreatedAtAction(nameof(RegistrarNuevoPaciente), new { id = paciente.Dni }, paciente);
+            await _pacienteService.RegistrarNuevoPaciente(paciente);
+            return CreatedAtAction(nameof(ObtenerPacientePorDni), new { dni = paciente.Dni }, paciente);
         }
 
         [HttpDelete("{dni}")]
@@ -79,11 +55,10 @@ namespace Clinicks.API.Controllers
         }
 
         [HttpPut("{dni}")]
-        public async Task<IActionResult> ActualizarDatosPaciente(int dni, Paciente paciente)
+        public async Task<IActionResult> ActualizarDatosPaciente(int dni, PacienteUpdateDTO paciente)
         {
             if (dni != paciente.Dni) return BadRequest("El DNI no coincide");
 
-            // El service hace el laburo sucio
             bool actualizado = await _pacienteService.ActualizarDatosPaciente(paciente);
 
             if (!actualizado)

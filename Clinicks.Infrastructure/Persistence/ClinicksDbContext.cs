@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Clinicks.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Clinicks.Application.Context;
+namespace Clinicks.Infrastructure.Persistence;
 
 public partial class ClinicksDbContext : DbContext
 {
@@ -29,9 +29,6 @@ public partial class ClinicksDbContext : DbContext
     public virtual DbSet<Egreso> Egresos { get; set; }
     public virtual DbSet<Traslado> Traslados { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=clinicks_bd;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

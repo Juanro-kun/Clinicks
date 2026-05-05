@@ -1,184 +1,94 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Clinicks.Application.Context;
+using Clinicks.Application.DTOs.Pacientes;
 using Clinicks.Application.Interfaces;
+using Clinicks.Application.Exceptions;
 using Clinicks.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Clinicks.Application.Services
 {
     public class PacienteService : IPacienteService
     {
-        private readonly ClinicksDbContext _context;
+        private readonly IPacienteRepository _repository;
 
-        public PacienteService(ClinicksDbContext context)
+        public PacienteService(IPacienteRepository repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
-        public async Task<IEnumerable<Paciente>> ListarPacientes()
+        public async Task<IEnumerable<PacienteResponseDTO>> ListarPacientes()
         {
-            var pacientes = await _context.Pacientes
-                .Include(p => p.Internaciones)
-                .Include(p => p.Direcciones)
-                    .ThenInclude(d => d.CiudadNavigation)
-                        .ThenInclude(c => c.ProvinciaNavigation)
-                            .ThenInclude(pr => pr.PaisNavigation)
-                .ToListAsync();
-
-            foreach (var p in pacientes)
-            {
-                var direccion = p.Direcciones.FirstOrDefault();
-                if (direccion != null)
-                {
-                    p.Calle = direccion.Calle;
-                    p.Altura = direccion.Altura;
-                    p.CiudadNombre = direccion.CiudadNavigation?.Nombre;
-                    p.ProvinciaNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.Nombre;
-                    p.PaisNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
-                }
-                
-                // Determinamos si está internado
-                p.EstaInternado = p.Internaciones.Any(i => i.FechaFin == null);
-            }
-
-            return pacientes;
+            return await _repository.ListarPacientes();
         }
 
-        public async Task<Paciente?> BuscarPacientePorDni(int dni)
+        public async Task<PacienteResponseDTO?> BuscarPacientePorDni(int dni)
         {
-            var p = await ObtenerDetallesCompletosDelPaciente(dni);
-
-            if (p != null)
-            {
-                var direccion = p.Direcciones.FirstOrDefault();
-                if (direccion != null)
-                {
-                    p.Calle = direccion.Calle;
-                    p.Altura = direccion.Altura;
-                    p.CiudadNombre = direccion.CiudadNavigation?.Nombre;
-                    p.ProvinciaNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.Nombre;
-                    p.PaisNombre = direccion.CiudadNavigation?.ProvinciaNavigation?.PaisNavigation?.Nombre;
-                }
-            }
-
-            if (p != null)
-            {
-                p.EstaInternado = p.Internaciones.Any(i => i.FechaFin == null);
-            }
-
-            return p;
-        }
-
-        private async Task<Paciente?> ObtenerDetallesCompletosDelPaciente(int dni)
-        {
-            return await _context.Pacientes
-                .Include(pac => pac.Internaciones)
-                .Include(pac => pac.Direcciones)
-                    .ThenInclude(d => d.CiudadNavigation)
-                        .ThenInclude(c => c.ProvinciaNavigation)
-                            .ThenInclude(pr => pr.PaisNavigation)
-                .FirstOrDefaultAsync(pac => pac.Dni == dni);
+            return await _repository.BuscarPacientePorDni(dni);
         }
 
         public async Task<bool> ConsultarPaciente(int dni)
         {
-            return await _context.Pacientes.AnyAsync(e => e.Dni == dni);
+            return await _repository.ConsultarPaciente(dni);
         }
 
-        public async Task RegistrarNuevoPaciente(int dni, string nombre, string apellido, string telefono, string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
+        public async Task RegistrarNuevoPaciente(PacienteCreateDTO pacienteDto)
         {
+            var existe = await _repository.ConsultarPaciente(pacienteDto.Dni);
+            if (existe)
+                throw new ConflictException("Ya existe un paciente con este DNI.");
+
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle))
+            {
+                var ubicacionValida = await _repository.ExisteUbicacionAsync(
+                    pacienteDto.CiudadNombre ?? "", 
+                    pacienteDto.ProvinciaNombre ?? "", 
+                    pacienteDto.PaisNombre ?? "");
+                
+                if (!ubicacionValida)
+                    throw new ValidationException("La ciudad, provincia o país no son válidos o no existen.");
+            }
+
+            var nuevoPaciente = new Paciente
+            {
+                Dni = pacienteDto.Dni,
+                Nombre = pacienteDto.Nombre,
+                Apellido = pacienteDto.Apellido,
+                Telefono = pacienteDto.Telefono
+            };
+
+            await _repository.RegistrarNuevoPaciente(nuevoPaciente, pacienteDto.Calle, pacienteDto.Altura, pacienteDto.CiudadNombre, pacienteDto.ProvinciaNombre, pacienteDto.PaisNombre);
+        }
+
+        public async Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDTO)
+        {
+            if (!string.IsNullOrWhiteSpace(pacienteDTO.Calle) && pacienteDTO.Altura.HasValue)
+            {
+                var existeUbicacion = await _repository.ExisteUbicacionAsync(
+                    pacienteDTO.CiudadNombre ?? "", 
+                    pacienteDTO.ProvinciaNombre ?? "", 
+                    pacienteDTO.PaisNombre ?? "");
+                    
+                if (!existeUbicacion)
+                {
+                    throw new ArgumentException("La ciudad, provincia o país especificado no se encuentra registrado en el sistema.");
+                }
+            }
+
             var paciente = new Paciente
             {
-                Dni = dni,
-                Nombre = nombre,
-                Apellido = apellido,
-                Telefono = telefono
+                Dni = pacienteDTO.Dni,
+                Nombre = pacienteDTO.Nombre,
+                Apellido = pacienteDTO.Apellido,
+                Telefono = pacienteDTO.Telefono
             };
 
-            _context.Pacientes.Add(paciente);
-            await _context.SaveChangesAsync();
-
-            if (!string.IsNullOrWhiteSpace(calle))
-            {
-                await VerificarDireccion(calle, altura, ciudadNombre, provinciaNombre, paisNombre);
-                await GuardarDireccion(dni, calle, altura, ciudadNombre, provinciaNombre, paisNombre);
-            }
-        }
-
-        public async Task<bool> ActualizarDatosPaciente(Paciente paciente)
-        {
-            if (!string.IsNullOrWhiteSpace(paciente.Calle) && paciente.Altura.HasValue)
-            {
-                await VerificarDireccion(paciente.Calle, paciente.Altura.Value, paciente.CiudadNombre, paciente.ProvinciaNombre, paciente.PaisNombre);
-                await GuardarDireccion(paciente.Dni, paciente.Calle, paciente.Altura.Value, paciente.CiudadNombre, paciente.ProvinciaNombre, paciente.PaisNombre);
-            }
-
-            _context.Entry(paciente).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-                return true; // Salió todo joya
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Si saltó este error, es muy probable que el paciente no exista
-                if (!await ConsultarPaciente(paciente.Dni)) return false;
-                throw; // Si es otro error raro, que explote
-            }
-        }
-
-        private async Task VerificarDireccion(string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
-        {
-            var ciudad = await _context.Ciudades
-                .Include(c => c.ProvinciaNavigation)
-                    .ThenInclude(p => p.PaisNavigation)
-                .FirstOrDefaultAsync(c => 
-                    c.Nombre == ciudadNombre && 
-                    c.ProvinciaNavigation.Nombre == provinciaNombre && 
-                    c.ProvinciaNavigation.PaisNavigation.Nombre == paisNombre);
-
-            if (ciudad == null)
-            {
-                throw new ArgumentException("La ciudad, provincia o país especificado no se encuentra registrado en el sistema.");
-            }
-        }
-
-        private async Task<int> GuardarDireccion(int dni, string calle, int altura, string ciudadNombre, string provinciaNombre, string paisNombre)
-        {
-            var ciudad = await _context.Ciudades
-                .Include(c => c.ProvinciaNavigation)
-                    .ThenInclude(p => p.PaisNavigation)
-                .FirstOrDefaultAsync(c => 
-                    c.Nombre == ciudadNombre && 
-                    c.ProvinciaNavigation.Nombre == provinciaNombre && 
-                    c.ProvinciaNavigation.PaisNavigation.Nombre == paisNombre);
-
-            var direccion = new Direccion { 
-                Calle = calle.Trim(), 
-                Altura = altura, 
-                IdCiudad = ciudad!.IdCiudad,
-                Dni = dni
-            };
-
-            _context.Direcciones.Add(direccion);
-            await _context.SaveChangesAsync();
-
-            return direccion.IdDireccion;
+            return await _repository.ActualizarDatosPaciente(paciente, pacienteDTO.Calle, pacienteDTO.Altura, pacienteDTO.CiudadNombre, pacienteDTO.ProvinciaNombre, pacienteDTO.PaisNombre);
         }
 
         public async Task EliminarPaciente(int dni)
         {
-            var paciente = await _context.Pacientes.FindAsync(dni);
-            if (paciente != null)
-            {
-                _context.Pacientes.Remove(paciente);
-                await _context.SaveChangesAsync();
-            }
+            await _repository.EliminarPaciente(dni);
         }
     }
 }

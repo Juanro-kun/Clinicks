@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    // REVISÁ que este puerto sea el mismo que usa tu API de .NET (miralo en el Swagger)
-    baseURL: 'https://localhost:7296/api' 
+    // Apuntamos al puerto HTTP que levanta `dotnet run` por defecto
+    baseURL: 'http://localhost:5223/api' 
 });
 
 // Este es el "Interceptor": antes de mandar CUALQUIER pedido, 

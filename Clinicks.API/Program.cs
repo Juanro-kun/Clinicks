@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
-using Clinicks.Application.Context;
+using Clinicks.Infrastructure.Persistence;
+using Clinicks.Infrastructure.Repositories;
+using Clinicks.Infrastructure.Security;
 using Clinicks.Application.Interfaces;
 using Clinicks.Application.Services;
+using Clinicks.API.Middlewares;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 
@@ -16,12 +19,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ClinicksDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Servicios de Negocio: Registramos el CRUD de Pacientes y el de Auth
+// Repositorios (Infraestructura)
+builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUbicacionRepository, UbicacionRepository>();
+builder.Services.AddScoped<IHabitacionRepository, HabitacionRepository>();
+builder.Services.AddScoped<IInternacionRepository, InternacionRepository>();
+
+// Servicios de Negocio
 builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IHabitacionService, HabitacionService>();
 builder.Services.AddScoped<IInternacionService, InternacionService>();
 builder.Services.AddScoped<IUbicacionService, UbicacionService>();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Proveedores de Seguridad (Infraestructura)
+builder.Services.AddScoped<ITokenProvider, JwtTokenProvider>();
+builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
 // Seguridad JWT: Le ensenamos a la API a validar el "pasaporte" (Token)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -96,7 +110,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Inicializar la base de datos aplicando las migraciones automáticamente
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ClinicksDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 app.UseHttpsRedirection();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // EL ORDEN ACA ABAJO ES VIDA O MUERTE:
 app.UseRouting(); // Organiza las rutas

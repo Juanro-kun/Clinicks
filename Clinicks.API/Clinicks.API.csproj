@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Clinicks.Application\Clinicks.Application.csproj" />
     <ProjectReference Include="..\Clinicks.Domain\Clinicks.Domain.csproj" />
+    <ProjectReference Include="..\Clinicks.Infrastructure\Clinicks.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

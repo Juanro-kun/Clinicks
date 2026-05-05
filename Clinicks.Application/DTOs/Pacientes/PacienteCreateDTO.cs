@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace Clinicks.Domain.Entities;
+namespace Clinicks.Application.DTOs.Pacientes;
 
-public partial class Paciente
+public class PacienteCreateDTO
 {
     [Required(ErrorMessage = "El DNI es obligatorio.")]
     [Range(1_000_000, 99_999_999, ErrorMessage = "El DNI debe ser un número válido de 7 u 8 cifras.")]
@@ -18,13 +16,12 @@ public partial class Paciente
     [StringLength(50, MinimumLength = 1, ErrorMessage = "El apellido debe tener entre 1 y 50 caracteres.")]
     public string Apellido { get; set; } = null!;
 
-    [System.Text.Json.Serialization.JsonIgnore]
-    public virtual ICollection<Direccion> Direcciones { get; set; } = new List<Direccion>();
-
-    [System.Text.Json.Serialization.JsonIgnore]
-    public virtual ICollection<Internacion> Internaciones { get; set; } = new List<Internacion>();
-
     [Phone(ErrorMessage = "El formato del teléfono no es válido.")]
     public string? Telefono { get; set; }
 
+    public string? Calle { get; set; }
+    public int? Altura { get; set; }
+    public string? CiudadNombre { get; set; }
+    public string? ProvinciaNombre { get; set; }
+    public string? PaisNombre { get; set; }
 }

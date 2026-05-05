@@ -1,62 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using BCrypt.Net;
-using Clinicks.Application.Context;
-using Clinicks.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using Clinicks.Application.Interfaces;
 
 namespace Clinicks.Application.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
-        private readonly ClinicksDbContext _context;
-        private readonly IConfiguration _config;
+        private readonly IAuthRepository _repository;
+        private readonly ITokenProvider _tokenProvider;
+        private readonly IPasswordHasher _passwordHasher;
 
-        public AuthService(ClinicksDbContext context, IConfiguration config)
+        public AuthService(
+            IAuthRepository repository, 
+            ITokenProvider tokenProvider,
+            IPasswordHasher passwordHasher)
         {
-            _context = context;
-            _config = config;
+            _repository = repository;
+            _tokenProvider = tokenProvider;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<string?> IniciarSesion(string username, string password)
         {
-            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Nombre == username);
+            var usuario = await _repository.BuscarUsuarioPorNombre(username);
 
-            // Verificamos si existe y si el hash de la clave coincide
-            if (usuario == null || !BCrypt.Net.BCrypt.Verify(password, usuario.Password))
+            if (usuario == null || !_passwordHasher.VerifyPassword(password, usuario.Password))
                 return null;
 
-            return GenerarToken(usuario);
-        }
-
-        private string GenerarToken(Usuario usuario)
-        {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, usuario.Nombre),
-                new Claim("UsuarioId", usuario.UsuarioId.ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(8),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return _tokenProvider.GenerarToken(usuario);
         }
     }
 }

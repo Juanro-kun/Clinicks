@@ -5,9 +5,9 @@ using Clinicks.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Clinicks.API.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
+
 public class HabitacionesController : ControllerBase
 {
     private readonly IHabitacionService _habitacionService;
