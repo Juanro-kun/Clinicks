@@ -25,16 +25,16 @@ namespace Clinicks.API.Controllers
         }
 
         [HttpGet("provincias")]
-        public async Task<IActionResult> ObtenerProvincias()
+        public async Task<IActionResult> ObtenerProvincias([FromQuery] int? idPais)
         {
-            var provincias = await _ubicacionService.ConsultarProvincia();
+            var provincias = await _ubicacionService.ConsultarProvincia(idPais);
             return Ok(provincias);
         }
 
         [HttpGet("ciudades")]
-        public async Task<IActionResult> ObtenerCiudades()
+        public async Task<IActionResult> ObtenerCiudades([FromQuery] int? idProvincia)
         {
-            var ciudades = await _ubicacionService.ConsultarCiudad();
+            var ciudades = await _ubicacionService.ConsultarCiudad(idProvincia);
             return Ok(ciudades);
         }
 

@@ -8,6 +8,9 @@ public class PacienteResponseDTO
     public string? Telefono { get; set; }
     public string? Calle { get; set; }
     public int? Altura { get; set; }
+    public int? IdCiudad { get; set; }
+    public int? IdProvincia { get; set; }
+    public int? IdPais { get; set; }
     public string? CiudadNombre { get; set; }
     public string? ProvinciaNombre { get; set; }
     public string? PaisNombre { get; set; }

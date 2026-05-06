@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Clinicks.Application.DTOs.Ubicaciones;
 using Clinicks.Application.Interfaces;
 
 namespace Clinicks.Application.Services
@@ -13,19 +14,19 @@ namespace Clinicks.Application.Services
             _repository = repository;
         }
 
-        public async Task<IEnumerable<string>> ConsultarPais()
+        public async Task<IEnumerable<UbicacionDTO>> ConsultarPais()
         {
             return await _repository.ConsultarPais();
         }
 
-        public async Task<IEnumerable<string>> ConsultarProvincia()
+        public async Task<IEnumerable<UbicacionDTO>> ConsultarProvincia(int? idPais = null)
         {
-            return await _repository.ConsultarProvincia();
+            return await _repository.ConsultarProvincia(idPais);
         }
 
-        public async Task<IEnumerable<string>> ConsultarCiudad()
+        public async Task<IEnumerable<UbicacionDTO>> ConsultarCiudad(int? idProvincia = null)
         {
-            return await _repository.ConsultarCiudad();
+            return await _repository.ConsultarCiudad(idProvincia);
         }
 
         public async Task<IEnumerable<string>> ConsultarCalle()

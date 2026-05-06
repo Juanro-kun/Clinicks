@@ -31,6 +31,9 @@ namespace Clinicks.Infrastructure.Repositories
             CiudadNombre = p.Direcciones.Select(d => d.CiudadNavigation.Nombre).FirstOrDefault(),
             ProvinciaNombre = p.Direcciones.Select(d => d.CiudadNavigation.ProvinciaNavigation.Nombre).FirstOrDefault(),
             PaisNombre = p.Direcciones.Select(d => d.CiudadNavigation.ProvinciaNavigation.PaisNavigation.Nombre).FirstOrDefault(),
+            IdCiudad = p.Direcciones.Select(d => d.IdCiudad).FirstOrDefault(),
+            IdProvincia = p.Direcciones.Select(d => d.CiudadNavigation.IdProvincia).FirstOrDefault(),
+            IdPais = p.Direcciones.Select(d => d.CiudadNavigation.ProvinciaNavigation.IdPais).FirstOrDefault(),
             EstaInternado = p.Internaciones.Any(i => i.FechaFin == null)
         };
 
@@ -54,23 +57,39 @@ namespace Clinicks.Infrastructure.Repositories
             return await _context.Pacientes.AnyAsync(e => e.Dni == dni);
         }
 
-        public async Task RegistrarNuevoPaciente(Paciente paciente, string? calle, int? altura, string? ciudadNombre, string? provinciaNombre, string? paisNombre)
+        public async Task RegistrarNuevoPaciente(PacienteCreateDTO pacienteDto)
         {
+            var paciente = new Paciente
+            {
+                Dni = pacienteDto.Dni,
+                Nombre = pacienteDto.Nombre,
+                Apellido = pacienteDto.Apellido,
+                Telefono = pacienteDto.Telefono
+            };
+
             _context.Pacientes.Add(paciente);
             await _context.SaveChangesAsync();
 
-            if (!string.IsNullOrWhiteSpace(calle))
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle))
             {
-                await GuardarDireccion(paciente.Dni, calle, altura ?? 0, ciudadNombre, provinciaNombre, paisNombre);
+                await GuardarDireccion(pacienteDto.Dni, pacienteDto.Calle, pacienteDto.Altura ?? 0, pacienteDto.IdCiudad);
             }
         }
 
-        public async Task<bool> ActualizarDatosPaciente(Paciente paciente, string? calle, int? altura, string? ciudadNombre, string? provinciaNombre, string? paisNombre)
+        public async Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDto)
         {
-            if (!string.IsNullOrWhiteSpace(calle) && altura.HasValue)
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle) && pacienteDto.Altura.HasValue)
             {
-                await GuardarDireccion(paciente.Dni, calle, altura.Value, ciudadNombre, provinciaNombre, paisNombre);
+                await GuardarDireccion(pacienteDto.Dni, pacienteDto.Calle, pacienteDto.Altura.Value, pacienteDto.IdCiudad);
             }
+
+            var paciente = new Paciente
+            {
+                Dni = pacienteDto.Dni,
+                Nombre = pacienteDto.Nombre,
+                Apellido = pacienteDto.Apellido,
+                Telefono = pacienteDto.Telefono
+            };
 
             _context.Entry(paciente).State = EntityState.Modified;
 
@@ -96,30 +115,12 @@ namespace Clinicks.Infrastructure.Repositories
             }
         }
 
-        private IQueryable<Ciudad> ObtenerConsultaCiudad(string ciudadNombre, string provinciaNombre, string paisNombre)
+        private async Task<int> GuardarDireccion(int dni, string calle, int altura, int? idCiudad)
         {
-            return _context.Ciudades
-                .Include(c => c.ProvinciaNavigation)
-                    .ThenInclude(p => p.PaisNavigation)
-                .Where(c => 
-                    c.Nombre == ciudadNombre && 
-                    c.ProvinciaNavigation.Nombre == provinciaNombre && 
-                    c.ProvinciaNavigation.PaisNavigation.Nombre == paisNombre);
-        }
-
-        public async Task<bool> ExisteUbicacionAsync(string ciudadNombre, string provinciaNombre, string paisNombre)
-        {
-            return await ObtenerConsultaCiudad(ciudadNombre, provinciaNombre, paisNombre).AnyAsync();
-        }
-
-        private async Task<int> GuardarDireccion(int dni, string calle, int altura, string? ciudadNombre, string? provinciaNombre, string? paisNombre)
-        {
-            var ciudad = await ObtenerConsultaCiudad(ciudadNombre ?? "", provinciaNombre ?? "", paisNombre ?? "").FirstOrDefaultAsync();
-
             var direccion = new Direccion { 
                 Calle = calle.Trim(), 
                 Altura = altura, 
-                IdCiudad = ciudad!.IdCiudad,
+                IdCiudad = idCiudad,
                 Dni = dni
             };
 

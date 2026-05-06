@@ -4,6 +4,7 @@ import api from "../api/api"
 import { useNavigate } from "react-router-dom"
 
 export default function Pacientes() {
+  const [error, setError] = useState("");
   const [patients, setPatients] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -13,7 +14,7 @@ export default function Pacientes() {
   
   const [patientForm, setPatientForm] = useState({ 
     dni: '', nombre: '', apellido: '', telefono: '',
-    calle: '', altura: '', ciudadNombre: '', provinciaNombre: '', paisNombre: '' 
+    calle: '', altura: '', idCiudad: '', idProvincia: '', idPais: '' 
   })
 
   // Listas para autocompletado
@@ -42,20 +43,37 @@ export default function Pacientes() {
 
   const obtenerListasDeUbicaciones = async () => {
     try {
-      const [resCalles, resCiudades, resProvincias, resPaises] = await Promise.all([
+      const [resCalles, resPaises] = await Promise.all([
         api.get('/Ubicaciones/calles'),
-        api.get('/Ubicaciones/ciudades'),
-        api.get('/Ubicaciones/provincias'),
         api.get('/Ubicaciones/paises')
       ])
       setCallesList(resCalles.data)
-      setCiudadesList(resCiudades.data)
-      setProvinciasList(resProvincias.data)
       setPaisesList(resPaises.data)
     } catch (err) {
       console.error("Error al obtener ubicaciones", err)
     }
   }
+
+  // Efectos para cargar provincias y ciudades en cascada
+  useEffect(() => {
+    if (patientForm.idPais) {
+      api.get(`/Ubicaciones/provincias?idPais=${patientForm.idPais}`)
+        .then(res => setProvinciasList(res.data))
+        .catch(console.error)
+    } else {
+      setProvinciasList([])
+    }
+  }, [patientForm.idPais])
+
+  useEffect(() => {
+    if (patientForm.idProvincia) {
+      api.get(`/Ubicaciones/ciudades?idProvincia=${patientForm.idProvincia}`)
+        .then(res => setCiudadesList(res.data))
+        .catch(console.error)
+    } else {
+      setCiudadesList([])
+    }
+  }, [patientForm.idProvincia])
 
   useEffect(() => { 
     obtenerListaDePacientes();
@@ -75,7 +93,7 @@ export default function Pacientes() {
     setIsEditing(false)
     setPatientForm({ 
       dni: '', nombre: '', apellido: '', telefono: '',
-      calle: '', altura: '', ciudadNombre: '', provinciaNombre: '', paisNombre: '' 
+      calle: '', altura: '', idCiudad: '', idProvincia: '', idPais: '' 
     })
   }
 
@@ -139,14 +157,18 @@ export default function Pacientes() {
             return;
         }
 
-        // Formatear ubicaciones para que tengan la primera letra mayúscula
+        // Formatear ubicaciones
         const formAEnviar = {
             ...patientForm,
             calle: capitalizarPalabras(patientForm.calle),
-            ciudadNombre: capitalizarPalabras(patientForm.ciudadNombre),
-            provinciaNombre: capitalizarPalabras(patientForm.provinciaNombre),
-            paisNombre: capitalizarPalabras(patientForm.paisNombre)
+            idCiudad: patientForm.idCiudad ? parseInt(patientForm.idCiudad) : null,
+            idProvincia: patientForm.idProvincia ? parseInt(patientForm.idProvincia) : null,
+            idPais: patientForm.idPais ? parseInt(patientForm.idPais) : null
         };
+        delete formAEnviar.ciudadNombre;
+        delete formAEnviar.provinciaNombre;
+        delete formAEnviar.paisNombre;
+        delete formAEnviar.estaInternado;
 
         // 2. Si pasó los filtros, recién ahí vamos a la API
         try {
@@ -159,14 +181,13 @@ export default function Pacientes() {
             obtenerListaDePacientes();
             obtenerListasDeUbicaciones(); // Refrescar las listas por si se agregó algo nuevo
         } catch (err) {
-            console.log("Error completo:", err.response); // Esto miralo en la consola (F12)
+            console.error("Error en la petición:", err.response);
+
+            // Extraemos el mensaje del ConflictException que configuraste en C#
+            // Si err.response.data.Message existe, lo usamos; si no, un mensaje genérico
+            const mensajeDelBackend = err.response?.data?.Message || "Ocurrió un error inesperado al guardar.";
             
-            // Si la API mandó un objeto, lo convertimos a texto para el alert
-            const mensajeError = err.response?.data 
-                ? JSON.stringify(err.response.data) 
-                : err.message;
-                
-            alert("Error detallado: " + mensajeError);
+            setError(mensajeDelBackend);
         }
     };
 
@@ -327,26 +348,28 @@ export default function Pacientes() {
               </div>
 
               <div className="flex gap-4">
-                <input type="text" placeholder="Ciudad" list="ciudades-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
-                  value={patientForm.ciudadNombre || ''}
-                  onChange={e => setPatientForm({...patientForm, ciudadNombre: e.target.value})} />
-                <datalist id="ciudades-datalist">
-                  {ciudadesList.map(c => <option key={c} value={c} />)}
-                </datalist>
+                <select className="w-1/3 p-3 border border-slate-200 rounded-xl bg-white"
+                  value={patientForm.idPais || ''}
+                  onChange={e => setPatientForm({...patientForm, idPais: e.target.value, idProvincia: '', idCiudad: ''})} >
+                  <option value="">País</option>
+                  {paisesList.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
 
-                <input type="text" placeholder="Provincia" list="provincias-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
-                  value={patientForm.provinciaNombre || ''}
-                  onChange={e => setPatientForm({...patientForm, provinciaNombre: e.target.value})} />
-                <datalist id="provincias-datalist">
-                  {provinciasList.map(p => <option key={p} value={p} />)}
-                </datalist>
+                <select className="w-1/3 p-3 border border-slate-200 rounded-xl bg-white"
+                  value={patientForm.idProvincia || ''}
+                  onChange={e => setPatientForm({...patientForm, idProvincia: e.target.value, idCiudad: ''})}
+                  disabled={!patientForm.idPais} >
+                  <option value="">Provincia</option>
+                  {provinciasList.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
 
-                <input type="text" placeholder="País" list="paises-datalist" className="w-1/3 p-3 border border-slate-200 rounded-xl"
-                  value={patientForm.paisNombre || ''}
-                  onChange={e => setPatientForm({...patientForm, paisNombre: e.target.value})} />
-                <datalist id="paises-datalist">
-                  {paisesList.map(p => <option key={p} value={p} />)}
-                </datalist>
+                <select className="w-1/3 p-3 border border-slate-200 rounded-xl bg-white"
+                  value={patientForm.idCiudad || ''}
+                  onChange={e => setPatientForm({...patientForm, idCiudad: e.target.value})}
+                  disabled={!patientForm.idProvincia} >
+                  <option value="">Ciudad</option>
+                  {ciudadesList.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
               </div>
               
               <input 
@@ -358,7 +381,11 @@ export default function Pacientes() {
                     const valorLimpio2 = e.target.value.replace(/\D/g, '');
                     setPatientForm({ ...patientForm, telefono: valorLimpio2 });
                 }} />
-
+              {error && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                      {error}
+                  </div>
+              )}
               <button type="submit" className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-emerald-200">
                 {isEditing ? 'Actualizar Datos' : 'Guardar Paciente'}
               </button>
