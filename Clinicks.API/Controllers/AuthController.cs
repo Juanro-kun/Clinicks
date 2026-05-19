@@ -24,7 +24,7 @@ namespace Clinicks.API.Controllers
             var token = await _authService.IniciarSesion(request.Username, request.Password);
             
             if (token == null)
-                return Unauthorized("Usuario o contraseña incorrectos, wacho.");
+                return Unauthorized("Usuario o contraseña incorrectos");
 
             return Ok(new { Token = token });
         }

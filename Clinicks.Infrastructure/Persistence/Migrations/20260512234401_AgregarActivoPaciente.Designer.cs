@@ -4,6 +4,7 @@ using Clinicks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clinicks.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ClinicksDbContext))]
-    partial class ClinicksDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512234401_AgregarActivoPaciente")]
+    partial class AgregarActivoPaciente
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,16 +35,14 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id_habitacion");
 
-                    b.Property<int>("IdEstado")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("id_estado");
+                    b.Property<string>("Ocupado")
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("ocupado");
 
                     b.HasKey("NCama", "IdHabitacion")
                         .HasName("PK__Cama");
-
-                    b.HasIndex("IdEstado");
 
                     b.HasIndex("IdHabitacion");
 
@@ -114,38 +115,29 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.ToTable("Direccion", (string)null);
                 });
 
-            modelBuilder.Entity("Clinicks.Domain.Entities.EstadoCama", b =>
+            modelBuilder.Entity("Clinicks.Domain.Entities.Egreso", b =>
                 {
-                    b.Property<int>("IdEstado")
+                    b.Property<int>("IdEgreso")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id_estado");
+                        .HasColumnName("id_egreso");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEstado"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEgreso"));
 
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("nombre");
+                    b.Property<DateTime?>("Fecha")
+                        .HasColumnType("datetime")
+                        .HasColumnName("fecha");
 
-                    b.HasKey("IdEstado")
-                        .HasName("PK_EstadoCama");
+                    b.Property<int?>("IdInternacion")
+                        .HasColumnType("int")
+                        .HasColumnName("id_internacion");
 
-                    b.ToTable("EstadoCama", (string)null);
+                    b.HasKey("IdEgreso")
+                        .HasName("PK__Egreso");
 
-                    b.HasData(
-                        new
-                        {
-                            IdEstado = 1,
-                            Nombre = "Libre"
-                        },
-                        new
-                        {
-                            IdEstado = 2,
-                            Nombre = "Ocupado"
-                        });
+                    b.HasIndex("IdInternacion");
+
+                    b.ToTable("Egreso", (string)null);
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Habitacion", b =>
@@ -169,6 +161,31 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.ToTable("Habitacion", (string)null);
                 });
 
+            modelBuilder.Entity("Clinicks.Domain.Entities.Ingreso", b =>
+                {
+                    b.Property<int>("IdIngreso")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id_ingreso");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdIngreso"));
+
+                    b.Property<DateTime?>("Fecha")
+                        .HasColumnType("datetime")
+                        .HasColumnName("fecha");
+
+                    b.Property<int?>("IdInternacion")
+                        .HasColumnType("int")
+                        .HasColumnName("id_internacion");
+
+                    b.HasKey("IdIngreso")
+                        .HasName("PK__Ingreso");
+
+                    b.HasIndex("IdInternacion");
+
+                    b.ToTable("Ingreso", (string)null);
+                });
+
             modelBuilder.Entity("Clinicks.Domain.Entities.Internacion", b =>
                 {
                     b.Property<int>("IdInternacion")
@@ -182,61 +199,30 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("dni");
 
-                    b.Property<DateTime?>("FechaEgreso")
+                    b.Property<DateTime?>("FechaFin")
                         .HasColumnType("datetime")
-                        .HasColumnName("fecha_egreso");
+                        .HasColumnName("fecha_fin");
 
-                    b.Property<DateTime?>("FechaIngreso")
+                    b.Property<DateTime?>("FechaInicio")
                         .HasColumnType("datetime")
-                        .HasColumnName("fecha_ingreso");
+                        .HasColumnName("fecha_inicio");
+
+                    b.Property<int?>("IdHabitacion")
+                        .HasColumnType("int")
+                        .HasColumnName("id_habitacion");
+
+                    b.Property<int?>("NCama")
+                        .HasColumnType("int")
+                        .HasColumnName("n_cama");
 
                     b.HasKey("IdInternacion")
                         .HasName("PK__Internacion");
 
                     b.HasIndex("Dni");
 
-                    b.ToTable("Internacion", (string)null);
-                });
-
-            modelBuilder.Entity("Clinicks.Domain.Entities.MovimientoCama", b =>
-                {
-                    b.Property<int>("IdMovimiento")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id_movimiento");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMovimiento"));
-
-                    b.Property<DateTime?>("FechaFin")
-                        .HasColumnType("datetime")
-                        .HasColumnName("fecha_fin");
-
-                    b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime")
-                        .HasColumnName("fecha_inicio");
-
-                    b.Property<int>("IdHabitacion")
-                        .HasColumnType("int")
-                        .HasColumnName("id_habitacion");
-
-                    b.Property<int>("IdInternacion")
-                        .HasColumnType("int")
-                        .HasColumnName("id_internacion");
-
-                    b.Property<int>("NCama")
-                        .HasColumnType("int")
-                        .HasColumnName("n_cama");
-
-                    b.HasKey("IdMovimiento")
-                        .HasName("PK__MovimientoCama");
-
-                    b.HasIndex("IdHabitacion");
-
-                    b.HasIndex("IdInternacion");
-
                     b.HasIndex("NCama", "IdHabitacion");
 
-                    b.ToTable("MovimientoCama", (string)null);
+                    b.ToTable("Internacion", (string)null);
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Paciente", b =>
@@ -244,9 +230,6 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.Property<int>("Dni")
                         .HasColumnType("int")
                         .HasColumnName("dni");
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Apellido")
                         .IsRequired()
@@ -324,6 +307,37 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.ToTable("Provincia", (string)null);
                 });
 
+            modelBuilder.Entity("Clinicks.Domain.Entities.Traslado", b =>
+                {
+                    b.Property<int>("IdTraslado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id_traslado");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTraslado"));
+
+                    b.Property<DateTime?>("Fecha")
+                        .HasColumnType("datetime")
+                        .HasColumnName("fecha");
+
+                    b.Property<int?>("IdInternacionDestino")
+                        .HasColumnType("int")
+                        .HasColumnName("id_internacion_destino");
+
+                    b.Property<int?>("IdInternacionOrigen")
+                        .HasColumnType("int")
+                        .HasColumnName("id_internacion_origen");
+
+                    b.HasKey("IdTraslado")
+                        .HasName("PK__Traslado");
+
+                    b.HasIndex("IdInternacionDestino");
+
+                    b.HasIndex("IdInternacionOrigen");
+
+                    b.ToTable("Traslado", (string)null);
+                });
+
             modelBuilder.Entity("Clinicks.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("UsuarioId")
@@ -376,21 +390,12 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Cama", b =>
                 {
-                    b.HasOne("Clinicks.Domain.Entities.EstadoCama", "EstadoNavigation")
-                        .WithMany("Camas")
-                        .HasForeignKey("IdEstado")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_Cama_EstadoCama");
-
                     b.HasOne("Clinicks.Domain.Entities.Habitacion", "HabitacionNavigation")
                         .WithMany("Camas")
                         .HasForeignKey("IdHabitacion")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK__Cama__id_habitac");
-
-                    b.Navigation("EstadoNavigation");
 
                     b.Navigation("HabitacionNavigation");
                 });
@@ -422,6 +427,26 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.Navigation("PacienteNavigation");
                 });
 
+            modelBuilder.Entity("Clinicks.Domain.Entities.Egreso", b =>
+                {
+                    b.HasOne("Clinicks.Domain.Entities.Internacion", "InternacionNavigation")
+                        .WithMany("Egresos")
+                        .HasForeignKey("IdInternacion")
+                        .HasConstraintName("FK__Egreso__id_inter");
+
+                    b.Navigation("InternacionNavigation");
+                });
+
+            modelBuilder.Entity("Clinicks.Domain.Entities.Ingreso", b =>
+                {
+                    b.HasOne("Clinicks.Domain.Entities.Internacion", "InternacionNavigation")
+                        .WithMany("Ingresos")
+                        .HasForeignKey("IdInternacion")
+                        .HasConstraintName("FK__Ingreso__id_inte");
+
+                    b.Navigation("InternacionNavigation");
+                });
+
             modelBuilder.Entity("Clinicks.Domain.Entities.Internacion", b =>
                 {
                     b.HasOne("Clinicks.Domain.Entities.Paciente", "PacienteNavigation")
@@ -429,35 +454,14 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                         .HasForeignKey("Dni")
                         .HasConstraintName("FK__Internacion__dni");
 
-                    b.Navigation("PacienteNavigation");
-                });
-
-            modelBuilder.Entity("Clinicks.Domain.Entities.MovimientoCama", b =>
-                {
-                    b.HasOne("Clinicks.Domain.Entities.Habitacion", "HabitacionNavigation")
-                        .WithMany()
-                        .HasForeignKey("IdHabitacion")
-                        .IsRequired()
-                        .HasConstraintName("FK__MovimientoCama__id_habitacion");
-
-                    b.HasOne("Clinicks.Domain.Entities.Internacion", "InternacionNavigation")
-                        .WithMany("MovimientosCama")
-                        .HasForeignKey("IdInternacion")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK__MovimientoCama__id_internacion");
-
                     b.HasOne("Clinicks.Domain.Entities.Cama", "CamaNavigation")
-                        .WithMany("MovimientosCama")
+                        .WithMany("Internaciones")
                         .HasForeignKey("NCama", "IdHabitacion")
-                        .IsRequired()
-                        .HasConstraintName("FK__MovimientoCama__cama");
+                        .HasConstraintName("FK__Internacion__cama");
 
                     b.Navigation("CamaNavigation");
 
-                    b.Navigation("HabitacionNavigation");
-
-                    b.Navigation("InternacionNavigation");
+                    b.Navigation("PacienteNavigation");
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Provincia", b =>
@@ -470,19 +474,31 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                     b.Navigation("PaisNavigation");
                 });
 
+            modelBuilder.Entity("Clinicks.Domain.Entities.Traslado", b =>
+                {
+                    b.HasOne("Clinicks.Domain.Entities.Internacion", "InternacionDestinoNavigation")
+                        .WithMany("TrasladosDestino")
+                        .HasForeignKey("IdInternacionDestino")
+                        .HasConstraintName("FK__Traslado__destin");
+
+                    b.HasOne("Clinicks.Domain.Entities.Internacion", "InternacionOrigenNavigation")
+                        .WithMany("TrasladosOrigen")
+                        .HasForeignKey("IdInternacionOrigen")
+                        .HasConstraintName("FK__Traslado__origen");
+
+                    b.Navigation("InternacionDestinoNavigation");
+
+                    b.Navigation("InternacionOrigenNavigation");
+                });
+
             modelBuilder.Entity("Clinicks.Domain.Entities.Cama", b =>
                 {
-                    b.Navigation("MovimientosCama");
+                    b.Navigation("Internaciones");
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Ciudad", b =>
                 {
                     b.Navigation("Direcciones");
-                });
-
-            modelBuilder.Entity("Clinicks.Domain.Entities.EstadoCama", b =>
-                {
-                    b.Navigation("Camas");
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Habitacion", b =>
@@ -492,7 +508,13 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Internacion", b =>
                 {
-                    b.Navigation("MovimientosCama");
+                    b.Navigation("Egresos");
+
+                    b.Navigation("Ingresos");
+
+                    b.Navigation("TrasladosDestino");
+
+                    b.Navigation("TrasladosOrigen");
                 });
 
             modelBuilder.Entity("Clinicks.Domain.Entities.Paciente", b =>

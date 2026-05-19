@@ -9,8 +9,9 @@ namespace Clinicks.Application.Interfaces
         Task<IEnumerable<PacienteResponseDTO>> ListarPacientes();
         Task<PacienteResponseDTO?> BuscarPacientePorDni(int dni);
         Task<bool> ConsultarPaciente(int dni);
-        Task RegistrarNuevoPaciente(PacienteCreateDTO pacienteDto);
-        Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDto);
-        Task EliminarPaciente(int dni);
+        Task<Domain.Entities.Paciente?> ObtenerPacienteParaModificar(int dni);
+        void Agregar(Domain.Entities.Paciente paciente);
+        void Modificar(Domain.Entities.Paciente paciente);
+        void AgregarDireccion(Domain.Entities.Direccion direccion);
     }
 }

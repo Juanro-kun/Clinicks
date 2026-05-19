@@ -8,5 +8,7 @@ namespace Clinicks.Application.Interfaces
     {
         Task<IEnumerable<HabitacionDto>> ListarHabitaciones();
         Task<IEnumerable<CamaDto>> ListarTodasLasCamas();
+        Task<Domain.Entities.Cama?> ObtenerCama(int idHabitacion, int nCama);
+        void ModificarCama(Domain.Entities.Cama cama);
     }
 }

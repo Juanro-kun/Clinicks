@@ -18,6 +18,7 @@ public partial class ClinicksDbContext : DbContext
 
     public virtual DbSet<Paciente> Pacientes { get; set; }
     public virtual DbSet<Usuario> Usuarios { get; set; }
+    public virtual DbSet<EstadoCama> EstadosCama { get; set; }
     public virtual DbSet<Pais> Paises { get; set; }
     public virtual DbSet<Provincia> Provincias { get; set; }
     public virtual DbSet<Ciudad> Ciudades { get; set; }
@@ -25,9 +26,7 @@ public partial class ClinicksDbContext : DbContext
     public virtual DbSet<Habitacion> Habitaciones { get; set; }
     public virtual DbSet<Cama> Camas { get; set; }
     public virtual DbSet<Internacion> Internaciones { get; set; }
-    public virtual DbSet<Ingreso> Ingresos { get; set; }
-    public virtual DbSet<Egreso> Egresos { get; set; }
-    public virtual DbSet<Traslado> Traslados { get; set; }
+    public virtual DbSet<MovimientoCama> MovimientosCama { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -55,6 +54,8 @@ public partial class ClinicksDbContext : DbContext
                 .HasColumnName("telefono");
         });
 
+        modelBuilder.Entity<Paciente>().HasQueryFilter(p => p.Activo);
+
         modelBuilder.Entity<Usuario>(entity =>
         {
             entity.HasKey(e => e.UsuarioId).HasName("PK__Usuario__2ED7D2AF6D9861A0");
@@ -81,6 +82,23 @@ public partial class ClinicksDbContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("password");
             entity.Property(e => e.Rol).HasColumnName("rol");
+        });
+
+        modelBuilder.Entity<EstadoCama>(entity =>
+        {
+            entity.HasKey(e => e.IdEstado).HasName("PK_EstadoCama");
+            entity.ToTable("EstadoCama");
+            entity.Property(e => e.IdEstado).HasColumnName("id_estado").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre")
+                .IsRequired();
+
+            entity.HasData(
+                new EstadoCama { IdEstado = 1, Nombre = "Libre" },
+                new EstadoCama { IdEstado = 2, Nombre = "Ocupado" }
+            );
         });
 
         modelBuilder.Entity<Pais>(entity =>
@@ -165,14 +183,17 @@ public partial class ClinicksDbContext : DbContext
             entity.ToTable("Cama");
             entity.Property(e => e.NCama).HasColumnName("n_cama");
             entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
-            entity.Property(e => e.Ocupado)
-                .HasMaxLength(10)
-                .IsUnicode(false)
-                .HasColumnName("ocupado");
+            entity.Property(e => e.IdEstado)
+                .HasColumnName("id_estado")
+                .HasDefaultValue(1);
 
             entity.HasOne(d => d.HabitacionNavigation).WithMany(p => p.Camas)
                 .HasForeignKey(d => d.IdHabitacion)
                 .HasConstraintName("FK__Cama__id_habitac");
+
+            entity.HasOne(d => d.EstadoNavigation).WithMany(p => p.Camas)
+                .HasForeignKey(d => d.IdEstado)
+                .HasConstraintName("FK_Cama_EstadoCama");
         });
 
         modelBuilder.Entity<Internacion>(entity =>
@@ -181,73 +202,51 @@ public partial class ClinicksDbContext : DbContext
             entity.ToTable("Internacion");
             entity.Property(e => e.IdInternacion).HasColumnName("id_internacion");
             entity.Property(e => e.Dni).HasColumnName("dni");
-            entity.Property(e => e.FechaFin)
+            entity.Property(e => e.FechaEgreso)
                 .HasColumnType("datetime")
-                .HasColumnName("fecha_fin");
-            entity.Property(e => e.FechaInicio)
+                .HasColumnName("fecha_egreso");
+            entity.Property(e => e.FechaIngreso)
                 .HasColumnType("datetime")
-                .HasColumnName("fecha_inicio");
-            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
-            entity.Property(e => e.NCama).HasColumnName("n_cama");
+                .HasColumnName("fecha_ingreso");
 
             entity.HasOne(d => d.PacienteNavigation).WithMany(p => p.Internaciones)
                 .HasForeignKey(d => d.Dni)
                 .HasConstraintName("FK__Internacion__dni");
+        });
 
-            entity.HasOne(d => d.CamaNavigation).WithMany(p => p.Internaciones)
+        modelBuilder.Entity<MovimientoCama>(entity =>
+        {
+            entity.HasKey(e => e.IdMovimiento).HasName("PK__MovimientoCama");
+            entity.ToTable("MovimientoCama");
+            
+            entity.Property(e => e.IdMovimiento).HasColumnName("id_movimiento");
+            entity.Property(e => e.IdInternacion).HasColumnName("id_internacion");
+            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
+            entity.Property(e => e.NCama).HasColumnName("n_cama");
+            
+            entity.Property(e => e.FechaInicio)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_inicio");
+            entity.Property(e => e.FechaFin)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_fin");
+
+            entity.HasOne(d => d.InternacionNavigation).WithMany(p => p.MovimientosCama)
+                .HasForeignKey(d => d.IdInternacion)
+                .HasConstraintName("FK__MovimientoCama__id_internacion");
+
+            entity.HasOne(d => d.HabitacionNavigation).WithMany()
+                .HasForeignKey(d => d.IdHabitacion)
+                .HasConstraintName("FK__MovimientoCama__id_habitacion")
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.CamaNavigation).WithMany(p => p.MovimientosCama)
                 .HasForeignKey(d => new { d.NCama, d.IdHabitacion })
-                .HasConstraintName("FK__Internacion__cama");
+                .HasConstraintName("FK__MovimientoCama__cama")
+                .OnDelete(DeleteBehavior.ClientSetNull);
         });
 
-        modelBuilder.Entity<Ingreso>(entity =>
-        {
-            entity.HasKey(e => e.IdIngreso).HasName("PK__Ingreso");
-            entity.ToTable("Ingreso");
-            entity.Property(e => e.IdIngreso).HasColumnName("id_ingreso");
-            entity.Property(e => e.Fecha)
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
-            entity.Property(e => e.IdInternacion).HasColumnName("id_internacion");
 
-            entity.HasOne(d => d.InternacionNavigation).WithMany(p => p.Ingresos)
-                .HasForeignKey(d => d.IdInternacion)
-                .HasConstraintName("FK__Ingreso__id_inte");
-        });
-
-        modelBuilder.Entity<Egreso>(entity =>
-        {
-            entity.HasKey(e => e.IdEgreso).HasName("PK__Egreso");
-            entity.ToTable("Egreso");
-            entity.Property(e => e.IdEgreso).HasColumnName("id_egreso");
-            entity.Property(e => e.Fecha)
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
-            entity.Property(e => e.IdInternacion).HasColumnName("id_internacion");
-
-            entity.HasOne(d => d.InternacionNavigation).WithMany(p => p.Egresos)
-                .HasForeignKey(d => d.IdInternacion)
-                .HasConstraintName("FK__Egreso__id_inter");
-        });
-
-        modelBuilder.Entity<Traslado>(entity =>
-        {
-            entity.HasKey(e => e.IdTraslado).HasName("PK__Traslado");
-            entity.ToTable("Traslado");
-            entity.Property(e => e.IdTraslado).HasColumnName("id_traslado");
-            entity.Property(e => e.Fecha)
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
-            entity.Property(e => e.IdInternacionDestino).HasColumnName("id_internacion_destino");
-            entity.Property(e => e.IdInternacionOrigen).HasColumnName("id_internacion_origen");
-
-            entity.HasOne(d => d.InternacionDestinoNavigation).WithMany(p => p.TrasladosDestino)
-                .HasForeignKey(d => d.IdInternacionDestino)
-                .HasConstraintName("FK__Traslado__destin");
-
-            entity.HasOne(d => d.InternacionOrigenNavigation).WithMany(p => p.TrasladosOrigen)
-                .HasForeignKey(d => d.IdInternacionOrigen)
-                .HasConstraintName("FK__Traslado__origen");
-        });
 
         OnModelCreatingPartial(modelBuilder);
     }

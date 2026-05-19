@@ -15,4 +15,5 @@ public class PacienteResponseDTO
     public string? ProvinciaNombre { get; set; }
     public string? PaisNombre { get; set; }
     public bool EstaInternado { get; set; }
+    public bool Activo { get; set; }
 }

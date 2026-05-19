@@ -3,16 +3,19 @@ using System.Threading.Tasks;
 using Clinicks.Application.DTOs.Pacientes;
 using Clinicks.Application.Interfaces;
 using Clinicks.Application.Exceptions;
+using Clinicks.Domain.Entities;
 
 namespace Clinicks.Application.Services
 {
     public class PacienteService : IPacienteService
     {
         private readonly IPacienteRepository _repository;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public PacienteService(IPacienteRepository repository)
+        public PacienteService(IPacienteRepository repository, IUnidadDeTrabajo unidadDeTrabajo)
         {
             _repository = repository;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<IEnumerable<PacienteResponseDTO>> ListarPacientes()
@@ -36,17 +39,79 @@ namespace Clinicks.Application.Services
             if (existe)
                 throw new ConflictException("Ya existe un paciente con este DNI.");
 
-            await _repository.RegistrarNuevoPaciente(pacienteDto);
+            // 1. Instanciamos el paciente
+            var paciente = new Paciente
+            {
+                Dni = pacienteDto.Dni,
+                Nombre = pacienteDto.Nombre,
+                Apellido = pacienteDto.Apellido,
+                Telefono = pacienteDto.Telefono
+            };
+
+            // 2. Armamos el grafo: si hay dirección, se la agregamos a la colección del paciente
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle))
+            {
+                paciente.Direcciones.Add(new Direccion
+                {
+                    Calle = pacienteDto.Calle.Trim(),
+                    Altura = pacienteDto.Altura ?? 0,
+                    IdCiudad = pacienteDto.IdCiudad
+                });
+            }
+
+            _repository.Agregar(paciente);
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
         }
 
-        public async Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDTO)
+        public async Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDto)
         {
-            return await _repository.ActualizarDatosPaciente(pacienteDTO);
+            var paciente = await _repository.ObtenerPacienteParaModificar(pacienteDto.Dni);
+            if (paciente == null)
+            {
+                return false;
+            }
+
+            paciente.Nombre = pacienteDto.Nombre;
+            paciente.Apellido = pacienteDto.Apellido;
+            paciente.Telefono = pacienteDto.Telefono;
+            paciente.Activo = pacienteDto.Activo;
+
+
+            //ESTO ANDA MAL, CREA UNA DIRECCION CADA VEZ QUE SE EJECUTA, HAY QUE ENCONTRAR UNA SOLUCION PERO POR AHORA QUEDA ASÍ
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle) && pacienteDto.Altura.HasValue)
+            {
+                var direccion = new Direccion
+                {
+                    Calle = pacienteDto.Calle.Trim(),
+                    Altura = pacienteDto.Altura.Value,
+                    IdCiudad = pacienteDto.IdCiudad,
+                    Dni = paciente.Dni
+                };
+                _repository.AgregarDireccion(direccion);
+            }
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+            return true;
         }
 
         public async Task EliminarPaciente(int dni)
         {
-            await _repository.EliminarPaciente(dni);
+            var paciente = await _repository.ObtenerPacienteParaModificar(dni);
+            if (paciente == null)
+            {
+                return;
+            }
+            
+            var estaInternado = paciente.Internaciones.Any(i => i.FechaEgreso == null);
+            if (estaInternado)
+            {
+                throw new ConflictException("No se puede eliminar un paciente que se encuentra internado.");
+            }
+            
+            paciente.Activo = false;
+            
+            await _unidadDeTrabajo.GuardarCambiosAsync();
         }
     }
 }
@@ -76,21 +141,18 @@ namespace Clinicks.Application.Services
 
         public async Task<bool> CreateAsync(Paciente paciente)
         {
-            // 1. Atajamos el problema antes de que llegue a SQL
-            // Buscamos si ya existe alguien con ese DNI
+            
             var existe = await _context.Pacientes.AnyAsync(p => p.Dni == paciente.Dni);
 
             if (existe)
             {
-                // Si ya existe, no hacemos nada y devolvemos false
                 return false;
             }
 
-            // 2. Si llegamos acá, es porque el DNI está libre
             _context.Pacientes.Add(paciente);
             await _context.SaveChangesAsync();
 
-            return true; // Todo joya, creado con éxito
+            return true; 
         }
 
         public async Task<bool> UpdateAsync(Paciente paciente)

@@ -24,4 +24,5 @@ public class PacienteUpdateDTO
     public int? IdCiudad { get; set; }
     public int? IdProvincia { get; set; }
     public int? IdPais { get; set; }
+    public bool Activo { get; set; } = true;
 }

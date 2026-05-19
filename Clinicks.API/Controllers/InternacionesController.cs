@@ -34,14 +34,25 @@ public class InternacionesController : ControllerBase
         return Ok(internaciones);
     }
 
-    [HttpPost("{id}/alta")]
-    public async Task<IActionResult> DarDeAlta(int id)
+    [HttpPost("{dni}/alta")]
+    public async Task<IActionResult> DarDeAlta(int dni)
     {
-        var exito = await _internacionService.ProcesarAltaMedica(id);
+        var exito = await _internacionService.ProcesarAltaMedica(dni);
         if (exito)
         {
             return Ok(new { message = "Paciente dado de alta exitosamente." });
         }
-        return NotFound("Internación no encontrada.");
+        return NotFound("Internación no encontrada o ya dada de alta.");
+    }
+
+    [HttpPost("trasladar")]
+    public async Task<IActionResult> TrasladarPaciente([FromBody] TrasladoRequestDto request)
+    {
+        var exito = await _internacionService.TrasladarPaciente(request);
+        if (exito)
+        {
+            return Ok(new { message = "Paciente trasladado exitosamente." });
+        }
+        return NotFound("Internación no encontrada o ya dada de alta.");
     }
 }

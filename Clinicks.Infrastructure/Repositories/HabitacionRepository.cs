@@ -5,6 +5,8 @@ using Clinicks.Application.DTOs;
 using Clinicks.Application.Interfaces;
 using Clinicks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Clinicks.Domain.Entities;
+using Clinicks.Domain.Enums;
 
 namespace Clinicks.Infrastructure.Repositories
 {
@@ -32,16 +34,18 @@ namespace Clinicks.Infrastructure.Repositories
         {
             var camas = await _context.Camas
                 .Include(c => c.HabitacionNavigation)
-                .Include(c => c.Internaciones)
-                    .ThenInclude(i => i.PacienteNavigation)
+                .Include(c => c.MovimientosCama)
+                    .ThenInclude(m => m.InternacionNavigation)
+                        .ThenInclude(i => i.PacienteNavigation)
                 .ToListAsync();
 
             return camas.Select(c => 
             {
-                var internacionActiva = c.Internaciones.FirstOrDefault(i => i.FechaFin == null);
-                var estaOcupada = internacionActiva != null;
+                var movimientoActivo = c.MovimientosCama.FirstOrDefault(m => m.FechaFin == null);
+                var internacionActiva = movimientoActivo?.InternacionNavigation;
+                var estaOcupada = movimientoActivo != null;
 
-                if (!estaOcupada && c.Ocupado == "Si") {
+                if (!estaOcupada && c.IdEstado == (int)EstadoCamaEnum.Ocupada) {
                     estaOcupada = true;
                 }
 
@@ -54,9 +58,19 @@ namespace Clinicks.Infrastructure.Repositories
                     DniPaciente = internacionActiva?.Dni,
                     NombrePaciente = internacionActiva?.PacienteNavigation?.Nombre,
                     ApellidoPaciente = internacionActiva?.PacienteNavigation?.Apellido,
-                    FechaInternacion = internacionActiva?.FechaInicio
+                    FechaInternacion = internacionActiva?.FechaIngreso
                 };
             });
+        }
+
+        public async Task<Cama?> ObtenerCama(int idHabitacion, int nCama)
+        {
+            return await _context.Camas.FirstOrDefaultAsync(c => c.IdHabitacion == idHabitacion && c.NCama == nCama);
+        }
+
+        public void ModificarCama(Cama cama)
+        {
+            _context.Camas.Update(cama);
         }
     }
 }

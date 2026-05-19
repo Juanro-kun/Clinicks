@@ -10,6 +10,6 @@ public class InternacionResponseDto
     public string ApellidoPaciente { get; set; } = string.Empty;
     public string HabitacionNombre { get; set; } = string.Empty;
     public int NCama { get; set; }
-    public DateTime? FechaInicio { get; set; }
-    public DateTime? FechaFin { get; set; }
+    public DateTime? FechaIngreso { get; set; }
+    public DateTime? FechaEgreso { get; set; }
 }

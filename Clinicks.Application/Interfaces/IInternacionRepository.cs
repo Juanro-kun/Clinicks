@@ -7,11 +7,13 @@ namespace Clinicks.Application.Interfaces
 {
     public interface IInternacionRepository
     {
-        Task<bool> VerificaInternacionActiva(int dni);
-        Task<bool> VerificarCamaOcupada(int idHabitacion, int nCama);
-        Task<bool> ExisteCama(int idHabitacion, int nCama);
-        Task ProcesarNuevaInternacion(Internacion nuevaInternacion);
+        Task<Internacion?> ObtenerInternacionActiva(int dni);
+        Task<Internacion?> ObtenerInternacionPorId(int idInternacion);
+        void Agregar(Internacion internacion);
+        void Modificar(Internacion internacion);
+        Task<MovimientoCama?> ObtenerMovimientoActivo(int idInternacion);
+        Task<MovimientoCama?> ObtenerMovimientoActivoEnCama(int idHabitacion, int nCama);
+        void ModificarMovimiento(MovimientoCama movimiento);
         Task<IEnumerable<InternacionResponseDto>> ListarInternacionesActivas();
-        Task<bool> ProcesarAltaMedica(int idInternacion);
     }
 }

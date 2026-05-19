@@ -19,120 +19,71 @@ namespace Clinicks.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<bool> VerificaInternacionActiva(int dni)
+        public async Task<Internacion?> ObtenerInternacionActiva(int dni)
         {
-            return await _context.Internaciones.AnyAsync(i => i.Dni == dni && i.FechaFin == null);
+            return await _context.Internaciones.FirstOrDefaultAsync(i => i.Dni == dni && i.FechaEgreso == null);
         }
 
-        public async Task<bool> VerificarCamaOcupada(int idHabitacion, int nCama)
+        public async Task<Internacion?> ObtenerInternacionPorId(int idInternacion)
         {
-            return await _context.Internaciones.AnyAsync(i => i.IdHabitacion == idHabitacion && i.NCama == nCama && i.FechaFin == null);
+            return await _context.Internaciones.FirstOrDefaultAsync(i => i.IdInternacion == idInternacion);
         }
 
-        public async Task<bool> ExisteCama(int idHabitacion, int nCama)
+        public void Agregar(Internacion internacion)
         {
-            return await _context.Camas.AnyAsync(c => c.IdHabitacion == idHabitacion && c.NCama == nCama);
+            _context.Internaciones.Add(internacion);
         }
 
-        public async Task ProcesarNuevaInternacion(Internacion nuevaInternacion)
+        public void Modificar(Internacion internacion)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                _context.Internaciones.Add(nuevaInternacion);
-                await _context.SaveChangesAsync();
+            _context.Internaciones.Update(internacion);
+        }
 
-                var nuevoIngreso = new Ingreso
-                {
-                    IdInternacion = nuevaInternacion.IdInternacion,
-                    Fecha = DateTime.Now
-                };
-                _context.Ingresos.Add(nuevoIngreso);
+        public async Task<MovimientoCama?> ObtenerMovimientoActivo(int idInternacion)
+        {
+            return await _context.MovimientosCama.FirstOrDefaultAsync(m => m.IdInternacion == idInternacion && m.FechaFin == null);
+        }
 
-                var cama = await _context.Camas.FirstOrDefaultAsync(c => c.IdHabitacion == nuevaInternacion.IdHabitacion && c.NCama == nuevaInternacion.NCama);
-                if (cama != null)
-                {
-                    cama.Ocupado = "Si";
-                    _context.Camas.Update(cama);
-                }
+        public async Task<MovimientoCama?> ObtenerMovimientoActivoEnCama(int idHabitacion, int nCama)
+        {
+            return await _context.MovimientosCama.FirstOrDefaultAsync(m => m.IdHabitacion == idHabitacion && m.NCama == nCama && m.FechaFin == null);
+        }
 
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+        public void ModificarMovimiento(MovimientoCama movimiento)
+        {
+            _context.MovimientosCama.Update(movimiento);
         }
 
         public async Task<IEnumerable<InternacionResponseDto>> ListarInternacionesActivas()
         {
             var internaciones = await _context.Internaciones
                 .Include(i => i.PacienteNavigation)
-                .Include(i => i.CamaNavigation)
-                    .ThenInclude(c => c.HabitacionNavigation)
-                .Where(i => i.FechaFin == null)
-                .OrderByDescending(i => i.FechaInicio)
+                .Where(i => i.FechaEgreso == null)
+                .OrderByDescending(i => i.FechaIngreso)
                 .ToListAsync();
 
-            return internaciones.Select(i => new InternacionResponseDto
+            var internacionesIds = internaciones.Select(i => i.IdInternacion).ToList();
+            
+            var movimientosActivos = await _context.MovimientosCama
+                .Include(m => m.HabitacionNavigation)
+                .Where(m => internacionesIds.Contains(m.IdInternacion) && m.FechaFin == null)
+                .ToDictionaryAsync(m => m.IdInternacion);
+
+            return internaciones.Select(i => 
             {
-                IdInternacion = i.IdInternacion,
-                Dni = i.Dni ?? 0,
-                NombrePaciente = i.PacienteNavigation?.Nombre ?? "Desconocido",
-                ApellidoPaciente = i.PacienteNavigation?.Apellido ?? "",
-                HabitacionNombre = i.CamaNavigation?.HabitacionNavigation?.Nombre ?? "Desconocida",
-                NCama = i.NCama ?? 0,
-                FechaInicio = i.FechaInicio,
-                FechaFin = i.FechaFin
-            });
-        }
-
-        public async Task<bool> ProcesarAltaMedica(int idInternacion)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var internacion = await _context.Internaciones
-                    .FirstOrDefaultAsync(i => i.IdInternacion == idInternacion);
-
-                if (internacion == null || internacion.FechaFin != null) 
+                var mov = movimientosActivos.GetValueOrDefault(i.IdInternacion);
+                return new InternacionResponseDto
                 {
-                    return false;
-                }
-
-                internacion.FechaFin = DateTime.Now;
-                _context.Internaciones.Update(internacion);
-
-                var egreso = new Egreso
-                {
-                    IdInternacion = internacion.IdInternacion,
-                    Fecha = DateTime.Now
+                    IdInternacion = i.IdInternacion,
+                    Dni = i.Dni ?? 0,
+                    NombrePaciente = i.PacienteNavigation?.Nombre ?? "Desconocido",
+                    ApellidoPaciente = i.PacienteNavigation?.Apellido ?? "",
+                    HabitacionNombre = mov?.HabitacionNavigation?.Nombre ?? "Desconocida",
+                    NCama = mov?.NCama ?? 0,
+                    FechaIngreso = i.FechaIngreso,
+                    FechaEgreso = i.FechaEgreso
                 };
-                _context.Egresos.Add(egreso);
-
-                if (internacion.IdHabitacion.HasValue && internacion.NCama.HasValue)
-                {
-                    var cama = await _context.Camas
-                        .FirstOrDefaultAsync(c => c.IdHabitacion == internacion.IdHabitacion && c.NCama == internacion.NCama);
-                    
-                    if (cama != null)
-                    {
-                        cama.Ocupado = "No";
-                        _context.Camas.Update(cama);
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            });
         }
     }
 }

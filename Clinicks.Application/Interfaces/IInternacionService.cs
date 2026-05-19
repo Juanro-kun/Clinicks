@@ -7,5 +7,6 @@ public interface IInternacionService
 {
     Task<bool> ProcesarInternacionDePaciente(InternacionRequestDto request);
     Task<IEnumerable<InternacionResponseDto>> ListarInternacionesActivas();
-    Task<bool> ProcesarAltaMedica(int idInternacion);
+    Task<bool> ProcesarAltaMedica(int dni);
+    Task<bool> TrasladarPaciente(TrasladoRequestDto request);
 }

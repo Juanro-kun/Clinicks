@@ -27,4 +27,5 @@ public partial class Paciente
     [Phone(ErrorMessage = "El formato del teléfono no es válido.")]
     public string? Telefono { get; set; }
 
+    public bool Activo { get; set; } = true;
 }
