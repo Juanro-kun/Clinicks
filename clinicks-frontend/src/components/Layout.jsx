@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { Users, Bed, Stethoscope, LogOut, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Users, Bed, LogOut, LayoutDashboard, ClipboardList } from 'lucide-react';
 
 
 const Layout = () => {
@@ -65,18 +65,6 @@ const Layout = () => {
                     >
                         <ClipboardList className={`w-6 h-6 ${isActive('/internaciones') ? 'text-emerald-500' : ''}`} />
                         <span className="text-lg">Internaciones</span>
-                    </Link>
-
-                    {/* Botón Médicos */}
-                    <Link
-                        to="/medicos"
-                        className={`flex items-center gap-5 px-6 py-3 rounded-[1.5rem] font-bold transition-all ${isActive('/medicos')
-                            ? 'text-emerald-600 bg-emerald-50 shadow-sm shadow-emerald-100/30'
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                            }`}
-                    >
-                        <Stethoscope className={`w-6 h-6 ${isActive('/medicos') ? 'text-emerald-500' : ''}`} />
-                        <span className="text-lg">Médicos</span>
                     </Link>
                 </nav>
 

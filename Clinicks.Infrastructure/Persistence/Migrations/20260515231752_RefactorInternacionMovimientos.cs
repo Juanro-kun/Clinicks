@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,9 +11,12 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK__Internacion__cama",
-                table: "Internacion");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK__Internacion__cama')
+                BEGIN
+                    ALTER TABLE [Internacion] DROP CONSTRAINT [FK__Internacion__cama];
+                END
+            ");
 
             migrationBuilder.DropTable(
                 name: "Egreso");
@@ -24,17 +27,31 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
             migrationBuilder.DropTable(
                 name: "Traslado");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Internacion_n_cama_id_habitacion",
-                table: "Internacion");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Internacion_n_cama_id_habitacion' AND object_id = OBJECT_ID('Internacion'))
+                BEGIN
+                    DROP INDEX [IX_Internacion_n_cama_id_habitacion] ON [Internacion];
+                END
+            ");
 
-            migrationBuilder.DropColumn(
-                name: "id_habitacion",
-                table: "Internacion");
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID('FK__Internacion__07C12930', 'F') IS NOT NULL
+                BEGIN
+                    ALTER TABLE [Internacion] DROP CONSTRAINT [FK__Internacion__07C12930];
+                END
 
-            migrationBuilder.DropColumn(
-                name: "n_cama",
-                table: "Internacion");
+                IF EXISTS(SELECT * FROM sys.columns WHERE Name = N'id_habitacion' AND Object_ID = Object_ID(N'Internacion'))
+                BEGIN
+                    ALTER TABLE [Internacion] DROP COLUMN [id_habitacion];
+                END
+            ");
+
+            migrationBuilder.Sql(@"
+                IF EXISTS(SELECT * FROM sys.columns WHERE Name = N'n_cama' AND Object_ID = Object_ID(N'Internacion'))
+                BEGIN
+                    ALTER TABLE [Internacion] DROP COLUMN [n_cama];
+                END
+            ");
 
             migrationBuilder.RenameColumn(
                 name: "fecha_inicio",

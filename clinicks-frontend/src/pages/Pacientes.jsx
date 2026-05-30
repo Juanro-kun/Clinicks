@@ -35,8 +35,19 @@ export default function Pacientes() {
   const obtenerListaDePacientes = async () => {
     try {
       const res = await api.get('/Pacientes')
-      setPatients(res.data)
+      console.log("Pacientes recibidos:", res.data)
+      // Asegurarnos de que sea un array
+      if (Array.isArray(res.data)) {
+        setPatients(res.data)
+      } else if (res.data && res.data.$values) {
+        setPatients(res.data.$values)
+      } else {
+        setPatients([])
+        setError("Formato de respuesta desconocido")
+      }
     } catch (err) {
+      console.error("Error al obtener pacientes:", err)
+      setError(err.message || "Error al obtener pacientes");
       if (err.response?.status === 401) navigate('/login')
     }
   }
@@ -204,11 +215,18 @@ export default function Pacientes() {
 
   const filteredPatients = useMemo(() => {
     const term = searchTerm.toLowerCase()
-    return patients.filter(p => 
-      p.dni.toString().includes(term) || 
-      p.nombre.toLowerCase().includes(term) || 
-      p.apellido.toLowerCase().includes(term)
-    )
+    return patients.filter(p => {
+      // Filtrar pacientes eliminados (Activo == false)
+      if (p.activo === false) return false;
+      
+      const dniStr = p.dni ? p.dni.toString() : "";
+      const nombreStr = p.nombre ? p.nombre.toLowerCase() : "";
+      const apellidoStr = p.apellido ? p.apellido.toLowerCase() : "";
+
+      return dniStr.includes(term) || 
+             nombreStr.includes(term) || 
+             apellidoStr.includes(term);
+    });
   }, [patients, searchTerm])
 
   return (
@@ -237,6 +255,12 @@ export default function Pacientes() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md shadow-sm">
+          <strong>Error: </strong> {error}
+        </div>
+      )}
 
       {/* Tabla */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">

@@ -3,7 +3,6 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Pacientes from './pages/Pacientes';
 import Habitaciones from './pages/Habitaciones';
-import Medicos from './pages/Medicos';
 import Internaciones from './pages/Internaciones';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -18,7 +17,6 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/pacientes" element={<Pacientes />} />
             <Route path="/habitaciones" element={<Habitaciones />} />
-            <Route path="/medicos" element={<Medicos />} />
             <Route path="/internaciones" element={<Internaciones />} />
             {/* otras paginas que requieran layoutn */}
           </Route>
