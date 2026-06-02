@@ -97,7 +97,8 @@ public partial class ClinicksDbContext : DbContext
 
             entity.HasData(
                 new EstadoCama { IdEstado = 1, Nombre = "Libre" },
-                new EstadoCama { IdEstado = 2, Nombre = "Ocupado" }
+                new EstadoCama { IdEstado = 2, Nombre = "Ocupado" },
+                new EstadoCama { IdEstado = 3, Nombre = "En Mantenimiento" }
             );
         });
 

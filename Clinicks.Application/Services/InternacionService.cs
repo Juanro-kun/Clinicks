@@ -5,7 +5,6 @@ using Clinicks.Application.DTOs;
 using Clinicks.Application.Interfaces;
 using Clinicks.Application.Exceptions;
 using Clinicks.Domain.Entities;
-using Clinicks.Domain.Enums;
 
 namespace Clinicks.Application.Services;
 
@@ -40,7 +39,7 @@ public class InternacionService : IInternacionService
         }
 
         var movimientoActivoEnCama = await _internacionRepository.ObtenerMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (movimientoActivoEnCama != null || cama.IdEstado != (int)EstadoCamaEnum.Libre)
+        if (movimientoActivoEnCama != null || !cama.EstaLibre)
         {
             throw new ConflictException("La cama seleccionada no está libre.");
         }
@@ -62,7 +61,7 @@ public class InternacionService : IInternacionService
 
         _internacionRepository.Agregar(nuevaInternacion);
 
-        cama.IdEstado = (int)EstadoCamaEnum.Ocupada;
+        cama.Ocupar();
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
 
@@ -92,7 +91,7 @@ public class InternacionService : IInternacionService
             var cama = await _habitacionRepository.ObtenerCama(movimiento.IdHabitacion, movimiento.NCama);
             if (cama != null)
             {
-                cama.IdEstado = (int)EstadoCamaEnum.Libre;
+                cama.Liberar();
             }
         }
 
@@ -115,7 +114,7 @@ public class InternacionService : IInternacionService
         }
 
         var ocupante = await _internacionRepository.ObtenerMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (ocupante != null || nuevaCama.IdEstado != (int)EstadoCamaEnum.Libre)
+        if (ocupante != null || !nuevaCama.EstaLibre)
         {
             throw new ConflictException("La cama de destino no está libre.");
         }
@@ -128,7 +127,7 @@ public class InternacionService : IInternacionService
             var camaAnterior = await _habitacionRepository.ObtenerCama(movimientoActual.IdHabitacion, movimientoActual.NCama);
             if (camaAnterior != null)
             {
-                camaAnterior.IdEstado = (int)EstadoCamaEnum.Libre;
+                camaAnterior.Liberar();
             }
         }
 
@@ -140,7 +139,7 @@ public class InternacionService : IInternacionService
             FechaFin = null
         });
 
-        nuevaCama.IdEstado = (int)EstadoCamaEnum.Ocupada;
+        nuevaCama.Ocupar();
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
         return true;

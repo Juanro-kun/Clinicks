@@ -45,7 +45,7 @@ namespace Clinicks.Infrastructure.Repositories
                 var internacionActiva = movimientoActivo?.InternacionNavigation;
                 var estaOcupada = movimientoActivo != null;
 
-                if (!estaOcupada && c.IdEstado == (int)EstadoCamaEnum.Ocupada) {
+                if (!estaOcupada && c.EstaOcupada) {
                     estaOcupada = true;
                 }
 
