@@ -58,7 +58,7 @@ namespace Clinicks.Infrastructure.Repositories
             return await _context.Pacientes.AnyAsync(e => e.Dni == dni);
         }
 
-        public async Task<Paciente?> ObtenerPacienteParaModificar(int dni)
+        public async Task<Paciente?> ObtenerPacientePorDni(int dni)
         {
             return await _context.Pacientes.Include(p => p.Internaciones).FirstOrDefaultAsync(p => p.Dni == dni);
         }

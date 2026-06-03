@@ -12,7 +12,7 @@ namespace Clinicks.Application.Interfaces
         void Agregar(Internacion internacion);
         void Modificar(Internacion internacion);
         Task<MovimientoCama?> ObtenerMovimientoActivo(int idInternacion);
-        Task<MovimientoCama?> ObtenerMovimientoActivoEnCama(int idHabitacion, int nCama);
+        Task<bool> ExisteMovimientoActivoEnCama(int idHabitacion, int nCama);
         void ModificarMovimiento(MovimientoCama movimiento);
         Task<IEnumerable<InternacionResponseDto>> ListarInternacionesActivas();
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace Clinicks.Domain.Entities;
 
@@ -28,4 +29,18 @@ public partial class Paciente
     public string? Telefono { get; set; }
 
     public bool Activo { get; set; } = true;
+
+    public bool TieneInternacionActiva()
+    {
+        return Internaciones.Any(i => i.FechaEgreso == null);
+    }
+
+    public void Eliminar()
+    {
+        if (TieneInternacionActiva())
+        {
+            throw new InvalidOperationException("No se puede eliminar un paciente que se encuentra internado.");
+        }
+        Activo = false;
+    }
 }

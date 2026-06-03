@@ -48,7 +48,7 @@ public partial class Cama
     public void Liberar() => _estadoActual?.Liberar(this);
     public void PonerEnMantenimiento() => _estadoActual?.PonerEnMantenimiento(this);
 
-    public bool EstaLibre => _estadoActual is EstadoCamaLibre;
+    public bool EstaLibre() => _estadoActual is EstadoCamaLibre;
     public bool EstaOcupada => _estadoActual is EstadoCamaOcupada;
 
     public virtual EstadoCama? EstadoNavigation { get; set; }

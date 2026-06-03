@@ -14,4 +14,22 @@ public partial class MovimientoCama
     public virtual Internacion? InternacionNavigation { get; set; }
     public virtual Habitacion? HabitacionNavigation { get; set; }
     public virtual Cama? CamaNavigation { get; set; }
+
+    public MovimientoCama() { }
+
+    public MovimientoCama(Cama cama)
+    {
+        IdHabitacion = cama.IdHabitacion;
+        NCama = cama.NCama;
+        FechaInicio = DateTime.Now;
+        FechaFin = null;
+        cama.Ocupar();
+    }
+
+    public void FinalizarMovimiento()
+    {
+        FechaFin = DateTime.Now;
+        CamaNavigation?.Liberar();
+    }
 }
+

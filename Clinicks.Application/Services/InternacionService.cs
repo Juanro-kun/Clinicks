@@ -38,30 +38,15 @@ public class InternacionService : IInternacionService
             throw new NotFoundException("La cama seleccionada no existe.");
         }
 
-        var movimientoActivoEnCama = await _internacionRepository.ObtenerMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (movimientoActivoEnCama != null || !cama.EstaLibre)
+        var existeMovimientoActivoEnCama = await _internacionRepository.ExisteMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
+        if (existeMovimientoActivoEnCama || !cama.EstaLibre())
         {
             throw new ConflictException("La cama seleccionada no está libre.");
         }
 
-        var nuevaInternacion = new Internacion
-        {
-            Dni = request.Dni,
-            FechaIngreso = DateTime.Now,
-            FechaEgreso = null
-        };
-
-        nuevaInternacion.MovimientosCama.Add(new MovimientoCama
-        {
-            IdHabitacion = request.IdHabitacion,
-            NCama = request.NCama,
-            FechaInicio = nuevaInternacion.FechaIngreso ?? DateTime.Now,
-            FechaFin = null
-        });
+        var nuevaInternacion = Internacion.Crear(request.Dni, cama);
 
         _internacionRepository.Agregar(nuevaInternacion);
-
-        cama.Ocupar();
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
 
@@ -81,19 +66,7 @@ public class InternacionService : IInternacionService
             return false;
         }
 
-        internacion.FechaEgreso = DateTime.Now;
-
-        var movimiento = await _internacionRepository.ObtenerMovimientoActivo(internacion.IdInternacion);
-        if (movimiento != null)
-        {
-            movimiento.FechaFin = DateTime.Now;
-
-            var cama = await _habitacionRepository.ObtenerCama(movimiento.IdHabitacion, movimiento.NCama);
-            if (cama != null)
-            {
-                cama.Liberar();
-            }
-        }
+        internacion.RegistrarAlta();
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
         return true;
@@ -113,35 +86,16 @@ public class InternacionService : IInternacionService
             throw new NotFoundException("La cama de destino no existe.");
         }
 
-        var ocupante = await _internacionRepository.ObtenerMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (ocupante != null || !nuevaCama.EstaLibre)
+        var existeMovimientoActivoEnCama = await _internacionRepository.ExisteMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
+        if (existeMovimientoActivoEnCama || !nuevaCama.EstaLibre())
         {
             throw new ConflictException("La cama de destino no está libre.");
         }
 
-        var movimientoActual = await _internacionRepository.ObtenerMovimientoActivo(internacion.IdInternacion);
-        if (movimientoActual != null)
-        {
-            movimientoActual.FechaFin = DateTime.Now;
-
-            var camaAnterior = await _habitacionRepository.ObtenerCama(movimientoActual.IdHabitacion, movimientoActual.NCama);
-            if (camaAnterior != null)
-            {
-                camaAnterior.Liberar();
-            }
-        }
-
-        internacion.MovimientosCama.Add(new MovimientoCama
-        {
-            IdHabitacion = request.IdHabitacion,
-            NCama = request.NCama,
-            FechaInicio = DateTime.Now,
-            FechaFin = null
-        });
-
-        nuevaCama.Ocupar();
+        internacion.RegistrarTraslado(nuevaCama);
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
         return true;
     }
 }
+

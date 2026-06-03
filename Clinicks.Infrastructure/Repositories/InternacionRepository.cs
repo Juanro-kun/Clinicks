@@ -21,7 +21,10 @@ namespace Clinicks.Infrastructure.Repositories
 
         public async Task<Internacion?> ObtenerInternacionActiva(int dni)
         {
-            return await _context.Internaciones.FirstOrDefaultAsync(i => i.Dni == dni && i.FechaEgreso == null);
+            return await _context.Internaciones
+                .Include(i => i.MovimientosCama)
+                    .ThenInclude(m => m.CamaNavigation)
+                .FirstOrDefaultAsync(i => i.Dni == dni && i.FechaEgreso == null);
         }
 
         public async Task<Internacion?> ObtenerInternacionPorId(int idInternacion)
@@ -41,12 +44,14 @@ namespace Clinicks.Infrastructure.Repositories
 
         public async Task<MovimientoCama?> ObtenerMovimientoActivo(int idInternacion)
         {
-            return await _context.MovimientosCama.FirstOrDefaultAsync(m => m.IdInternacion == idInternacion && m.FechaFin == null);
+            return await _context.MovimientosCama
+                .Include(m => m.CamaNavigation)
+                .FirstOrDefaultAsync(m => m.IdInternacion == idInternacion && m.FechaFin == null);
         }
 
-        public async Task<MovimientoCama?> ObtenerMovimientoActivoEnCama(int idHabitacion, int nCama)
+        public async Task<bool> ExisteMovimientoActivoEnCama(int idHabitacion, int nCama)
         {
-            return await _context.MovimientosCama.FirstOrDefaultAsync(m => m.IdHabitacion == idHabitacion && m.NCama == nCama && m.FechaFin == null);
+            return await _context.MovimientosCama.AnyAsync(m => m.IdHabitacion == idHabitacion && m.NCama == nCama && m.FechaFin == null);
         }
 
         public void ModificarMovimiento(MovimientoCama movimiento)

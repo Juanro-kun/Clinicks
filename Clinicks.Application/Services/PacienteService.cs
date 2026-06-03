@@ -66,7 +66,7 @@ namespace Clinicks.Application.Services
 
         public async Task<bool> ActualizarDatosPaciente(PacienteUpdateDTO pacienteDto)
         {
-            var paciente = await _repository.ObtenerPacienteParaModificar(pacienteDto.Dni);
+            var paciente = await _repository.ObtenerPacientePorDni(pacienteDto.Dni);
             if (paciente == null)
             {
                 return false;
@@ -97,19 +97,20 @@ namespace Clinicks.Application.Services
 
         public async Task EliminarPaciente(int dni)
         {
-            var paciente = await _repository.ObtenerPacienteParaModificar(dni);
+            var paciente = await _repository.ObtenerPacientePorDni(dni);
             if (paciente == null)
             {
                 return;
             }
             
-            var estaInternado = paciente.Internaciones.Any(i => i.FechaEgreso == null);
-            if (estaInternado)
+            try
             {
-                throw new ConflictException("No se puede eliminar un paciente que se encuentra internado.");
+                paciente.Eliminar();
             }
-            
-            paciente.Activo = false;
+            catch (InvalidOperationException ex)
+            {
+                throw new ConflictException(ex.Message);
+            }
             
             await _unidadDeTrabajo.GuardarCambiosAsync();
         }
