@@ -13,15 +13,18 @@ public class InternacionService : IInternacionService
     private readonly IInternacionRepository _internacionRepository;
     private readonly IHabitacionRepository _habitacionRepository;
     private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+    private readonly ICurrentUserProvider _currentUserProvider;
 
     public InternacionService(
         IInternacionRepository internacionRepository, 
         IHabitacionRepository habitacionRepository,
-        IUnidadDeTrabajo unidadDeTrabajo)
+        IUnidadDeTrabajo unidadDeTrabajo,
+        ICurrentUserProvider currentUserProvider)
     {
         _internacionRepository = internacionRepository;
         _habitacionRepository = habitacionRepository;
         _unidadDeTrabajo = unidadDeTrabajo;
+        _currentUserProvider = currentUserProvider;
     }
 
     public async Task<bool> ProcesarInternacionDePaciente(InternacionRequestDto request)
@@ -44,7 +47,10 @@ public class InternacionService : IInternacionService
             throw new ConflictException("La cama seleccionada no está libre.");
         }
 
+        int? creadorId = _currentUserProvider.GetCurrentUserId();
+
         var nuevaInternacion = Internacion.Crear(request.Dni, cama);
+        nuevaInternacion.CreadoPorUsuarioId = creadorId;
 
         _internacionRepository.Agregar(nuevaInternacion);
 

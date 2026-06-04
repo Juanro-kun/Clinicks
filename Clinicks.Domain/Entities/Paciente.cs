@@ -30,6 +30,9 @@ public partial class Paciente
 
     public bool Activo { get; set; } = true;
 
+    public int? CreadoPorUsuarioId { get; set; }
+    public virtual Usuario? CreadoPorUsuario { get; set; }
+
     public bool TieneInternacionActiva()
     {
         return Internaciones.Any(i => i.FechaEgreso == null);

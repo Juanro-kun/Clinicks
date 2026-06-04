@@ -10,8 +10,10 @@ public partial class Internacion
     public DateTime? FechaIngreso { get; set; }
     public DateTime? FechaEgreso { get; set; }
     public int? Dni { get; set; }
+    public int? CreadoPorUsuarioId { get; set; }
 
     public virtual Paciente? PacienteNavigation { get; set; }
+    public virtual Usuario? CreadoPorUsuario { get; set; }
     
     public virtual ICollection<MovimientoCama> MovimientosCama { get; set; } = new List<MovimientoCama>();
 

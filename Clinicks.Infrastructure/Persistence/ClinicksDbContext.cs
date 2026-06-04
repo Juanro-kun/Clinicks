@@ -52,6 +52,13 @@ public partial class ClinicksDbContext : DbContext
                 .HasMaxLength(30)
                 .IsUnicode(false)
                 .HasColumnName("telefono");
+            entity.Property(e => e.CreadoPorUsuarioId)
+                .HasColumnName("creado_por_usuario_id");
+
+            entity.HasOne(d => d.CreadoPorUsuario)
+                .WithMany()
+                .HasForeignKey(d => d.CreadoPorUsuarioId)
+                .HasConstraintName("FK_Paciente_Usuario");
         });
 
         modelBuilder.Entity<Paciente>().HasQueryFilter(p => p.Activo);
@@ -209,10 +216,17 @@ public partial class ClinicksDbContext : DbContext
             entity.Property(e => e.FechaIngreso)
                 .HasColumnType("datetime")
                 .HasColumnName("fecha_ingreso");
+            entity.Property(e => e.CreadoPorUsuarioId)
+                .HasColumnName("creado_por_usuario_id");
 
             entity.HasOne(d => d.PacienteNavigation).WithMany(p => p.Internaciones)
                 .HasForeignKey(d => d.Dni)
                 .HasConstraintName("FK__Internacion__dni");
+
+            entity.HasOne(d => d.CreadoPorUsuario)
+                .WithMany()
+                .HasForeignKey(d => d.CreadoPorUsuarioId)
+                .HasConstraintName("FK_Internacion_Usuario");
         });
 
         modelBuilder.Entity<MovimientoCama>(entity =>

@@ -11,11 +11,16 @@ namespace Clinicks.Application.Services
     {
         private readonly IPacienteRepository _repository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+        private readonly ICurrentUserProvider _currentUserProvider;
 
-        public PacienteService(IPacienteRepository repository, IUnidadDeTrabajo unidadDeTrabajo)
+        public PacienteService(
+            IPacienteRepository repository, 
+            IUnidadDeTrabajo unidadDeTrabajo,
+            ICurrentUserProvider currentUserProvider)
         {
             _repository = repository;
             _unidadDeTrabajo = unidadDeTrabajo;
+            _currentUserProvider = currentUserProvider;
         }
 
         public async Task<IEnumerable<PacienteResponseDTO>> ListarPacientes()
@@ -39,13 +44,16 @@ namespace Clinicks.Application.Services
             if (existe)
                 throw new ConflictException("Ya existe un paciente con este DNI.");
 
+            int? creadorId = _currentUserProvider.GetCurrentUserId();
+
             // 1. Instanciamos el paciente
             var paciente = new Paciente
             {
                 Dni = pacienteDto.Dni,
                 Nombre = pacienteDto.Nombre,
                 Apellido = pacienteDto.Apellido,
-                Telefono = pacienteDto.Telefono
+                Telefono = pacienteDto.Telefono,
+                CreadoPorUsuarioId = creadorId
             };
 
             // 2. Armamos el grafo: si hay dirección, se la agregamos a la colección del paciente

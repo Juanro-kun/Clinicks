@@ -10,10 +10,13 @@ using Clinicks.Application.Services;
 using Clinicks.API.Middlewares;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Clinicks.API;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. CONFIGURACION DE SERVICIOS (Dependency Injection) ---
+
+builder.Services.AddHttpContextAccessor();
 
 // Base de Datos: Conexion con SQL Server
 builder.Services.AddDbContext<ClinicksDbContext>(options =>
@@ -33,6 +36,7 @@ builder.Services.AddScoped<IHabitacionService, HabitacionService>();
 builder.Services.AddScoped<IInternacionService, InternacionService>();
 builder.Services.AddScoped<IUbicacionService, UbicacionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 
 // Proveedores de Seguridad (Infraestructura)
 builder.Services.AddScoped<ITokenProvider, JwtTokenProvider>();
