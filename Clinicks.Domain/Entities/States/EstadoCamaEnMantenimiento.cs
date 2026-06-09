@@ -8,16 +8,16 @@ public class EstadoCamaEnMantenimiento : IEstadoCamaState
 
     public void Ocupar(Cama context)
     {
-        throw new InvalidOperationException("No se puede ocupar una cama en mantenimiento.");
+        context.Fire(Cama.Trigger.Ocupar);
     }
 
     public void Liberar(Cama context)
     {
-        context.CambiarEstado(new EstadoCamaLibre());
+        context.Fire(Cama.Trigger.Liberar);
     }
 
     public void PonerEnMantenimiento(Cama context)
     {
-        throw new InvalidOperationException("La cama ya está en mantenimiento.");
+        context.Fire(Cama.Trigger.PonerEnMantenimiento);
     }
 }
