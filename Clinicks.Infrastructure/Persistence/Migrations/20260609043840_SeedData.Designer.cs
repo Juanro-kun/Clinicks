@@ -4,6 +4,7 @@ using Clinicks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clinicks.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ClinicksDbContext))]
-    partial class ClinicksDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609043840_SeedData")]
+    partial class SeedData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -534,7 +537,7 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                             Apellido = "Admin",
                             Email = "admin",
                             Nombre = "Admin",
-                            Password = "$2a$11$s6C3b/e0jIB988uFWKwJruxrPvHViFqdJJdvPjLF2gy0LmphVAr6u",
+                            Password = "1234",
                             Rol = 1
                         });
                 });

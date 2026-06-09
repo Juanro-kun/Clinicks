@@ -263,6 +263,49 @@ public partial class ClinicksDbContext : DbContext
 
 
 
+        // Seed Data
+        modelBuilder.Entity<Usuario>().HasData(
+            new Usuario { UsuarioId = 1, Nombre = "Admin", Apellido = "Admin", Rol = 1, Email = "admin", Password = BCrypt.Net.BCrypt.HashPassword("1234") }
+        );
+
+        modelBuilder.Entity<Pais>().HasData(
+            new Pais { IdPais = 1, Nombre = "Argentina" }
+        );
+
+        modelBuilder.Entity<Provincia>().HasData(
+            new Provincia { IdProvincia = 1, Nombre = "Buenos Aires", IdPais = 1 },
+            new Provincia { IdProvincia = 2, Nombre = "Córdoba", IdPais = 1 },
+            new Provincia { IdProvincia = 3, Nombre = "Santa Fe", IdPais = 1 }
+        );
+
+        modelBuilder.Entity<Ciudad>().HasData(
+            new Ciudad { IdCiudad = 1, Nombre = "CABA", IdProvincia = 1 },
+            new Ciudad { IdCiudad = 2, Nombre = "La Plata", IdProvincia = 1 },
+            new Ciudad { IdCiudad = 3, Nombre = "Córdoba Capital", IdProvincia = 2 },
+            new Ciudad { IdCiudad = 4, Nombre = "Rosario", IdProvincia = 3 }
+        );
+
+        modelBuilder.Entity<Habitacion>().HasData(
+            new Habitacion { IdHabitacion = 1, Nombre = "Sala General" },
+            new Habitacion { IdHabitacion = 2, Nombre = "Sala de Emergencias" },
+            new Habitacion { IdHabitacion = 3, Nombre = "Terapia Intensiva" }
+        );
+
+        modelBuilder.Entity<Cama>().HasData(
+            new Cama { NCama = 1, IdHabitacion = 1, IdEstado = 1 },
+            new Cama { NCama = 2, IdHabitacion = 1, IdEstado = 1 },
+            new Cama { NCama = 3, IdHabitacion = 1, IdEstado = 1 },
+            new Cama { NCama = 1, IdHabitacion = 2, IdEstado = 1 },
+            new Cama { NCama = 2, IdHabitacion = 2, IdEstado = 1 },
+            new Cama { NCama = 1, IdHabitacion = 3, IdEstado = 1 }
+        );
+
+        modelBuilder.Entity<Paciente>().HasData(
+            new Paciente { Dni = 12345678, Nombre = "Juan", Apellido = "Pérez", Telefono = "1122334455", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 87654321, Nombre = "María", Apellido = "Gómez", Telefono = "1155443322", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 45678912, Nombre = "Carlos", Apellido = "Rodríguez", Telefono = "1199887766", Activo = true, CreadoPorUsuarioId = 1 }
+        );
+
         OnModelCreatingPartial(modelBuilder);
     }
 

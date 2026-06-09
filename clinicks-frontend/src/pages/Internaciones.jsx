@@ -144,7 +144,7 @@ export default function Internaciones() {
                             {i.habitacionNombre} - Cama {i.nCama}
                         </td>
                         <td className="px-8 py-5 text-sm text-slate-500 font-medium">
-                            {new Date(i.fechaInicio).toLocaleDateString('es-AR', {
+                            {new Date(i.fechaIngreso).toLocaleDateString('es-AR', {
                                 day: '2-digit', month: '2-digit', year: 'numeric',
                                 hour: '2-digit', minute: '2-digit'
                             })}

@@ -4,6 +4,7 @@ using Clinicks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clinicks.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ClinicksDbContext))]
-    partial class ClinicksDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609045458_UpdateSeedUserPasswordHash")]
+    partial class UpdateSeedUserPasswordHash
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -534,7 +537,7 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                             Apellido = "Admin",
                             Email = "admin",
                             Nombre = "Admin",
-                            Password = "$2a$11$s6C3b/e0jIB988uFWKwJruxrPvHViFqdJJdvPjLF2gy0LmphVAr6u",
+                            Password = "$2a$11$00M769sgsGbVZG3ruLchD.b0fa.74lB5OY0FpC1onP6dpZ25pxzIa",
                             Rol = 1
                         });
                 });

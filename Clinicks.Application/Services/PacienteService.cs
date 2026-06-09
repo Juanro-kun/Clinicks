@@ -122,6 +122,8 @@ namespace Clinicks.Application.Services
                 }
             }
 
+            _repository.Modificar(paciente);
+
             await _unidadDeTrabajo.GuardarCambiosAsync();
             return true;
         }

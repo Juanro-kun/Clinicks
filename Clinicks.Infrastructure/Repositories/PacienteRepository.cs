@@ -118,13 +118,18 @@ namespace Clinicks.Infrastructure.Repositories
 
         public async Task<bool> ConsultarPaciente(int dni)
         {
-            return await _context.Pacientes.AnyAsync(e => e.Dni == dni);
+            var result = await _context.Database
+                .SqlQuery<int>($"EXEC sp_ConsultarPaciente_Count @Dni={dni}")
+                .ToListAsync();
+                
+            return result.FirstOrDefault() > 0;
         }
 
         public async Task<Paciente?> ObtenerPacientePorDni(int dni)
         {
             return await _context.Pacientes
                 .Include(p => p.Internaciones)
+                    .ThenInclude(i => i.MovimientosCama)
                 .Include(p => p.Direcciones)
                 .FirstOrDefaultAsync(p => p.Dni == dni);
         }
@@ -136,7 +141,10 @@ namespace Clinicks.Infrastructure.Repositories
 
         public void Modificar(Paciente paciente)
         {
-            _context.Pacientes.Update(paciente);
+            _context.Database.ExecuteSqlRaw(
+                "EXEC sp_ActualizarPaciente @Dni={0}, @Nombre={1}, @Apellido={2}, @Telefono={3}, @Activo={4}",
+                paciente.Dni, paciente.Nombre, paciente.Apellido, paciente.Telefono, paciente.Activo
+            );
         }
     }
 }

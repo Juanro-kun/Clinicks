@@ -127,6 +127,10 @@ export default function Pacientes() {
     obtenerListasDeUbicaciones();
   }, [])
 
+  useEffect(() => {
+    if (error) setError("");
+  }, [patientForm])
+
   // 1. FUNCIÓN PARA PREPARAR LA EDICIÓN
   const prepararEdicionDePaciente = (p) => {
     setPatientForm(p) // Cargamos los datos del paciente en el form
@@ -138,6 +142,7 @@ export default function Pacientes() {
   const cerrarFormularioPaciente = () => {
     setIsModalOpen(false)
     setIsEditing(false)
+    setError("")
     setPatientForm({ 
       dni: '', nombre: '', apellido: '', telefono: '',
       calle: '', altura: '', idCiudad: '', idProvincia: '', idPais: '' 
@@ -146,6 +151,10 @@ export default function Pacientes() {
 
   // LÓGICA DE INTERNACIÓN
   const abrirModalInternacion = async (p) => {
+    if (p.estaInternado) {
+      showNotification('error', "El paciente ya se encuentra internado.");
+      return;
+    }
     setPacienteAInternar(p)
     setIsInternarModalOpen(true)
     setInternarForm({ idHabitacion: '', nCama: '' })
@@ -164,7 +173,7 @@ export default function Pacientes() {
   const confirmarInternacion = async (e) => {
     e.preventDefault()
     if(!internarForm.idHabitacion || !internarForm.nCama) {
-        alert("Seleccione habitación y cama")
+        showNotification('error', "Seleccione habitación y cama")
         return
     }
     
@@ -174,10 +183,11 @@ export default function Pacientes() {
             idHabitacion: parseInt(internarForm.idHabitacion),
             nCama: parseInt(internarForm.nCama)
         })
-        alert("¡Paciente internado con éxito!")
+        showNotification('success', "¡Paciente internado con éxito!")
         setIsInternarModalOpen(false)
+        obtenerListaDePacientes(currentPage)
     } catch(err) {
-        alert(err.response?.data || "Error al internar")
+        showNotification('error', err.response?.data?.Message || err.response?.data || "Error al internar")
     }
   }
 
@@ -251,7 +261,7 @@ export default function Pacientes() {
 
             // Extraemos el mensaje del ConflictException que configuraste en C#
             // Si err.response.data.Message existe, lo usamos; si no, un mensaje genérico
-            const mensajeDelBackend = err.response?.data?.Message || "Ocurrió un error inesperado al guardar.";
+            const mensajeDelBackend = err.response?.data?.Message || "Se deben llenar los campos obligatorios (DNI, nombre y Apellido).";
             
             setError(mensajeDelBackend);
         }
@@ -316,12 +326,6 @@ export default function Pacientes() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md shadow-sm">
-          <strong>Error: </strong> {error}
-        </div>
-      )}
 
       {/* Tabla */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
