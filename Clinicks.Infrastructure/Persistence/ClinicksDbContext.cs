@@ -233,12 +233,12 @@ public partial class ClinicksDbContext : DbContext
         {
             entity.HasKey(e => e.IdMovimiento).HasName("PK__MovimientoCama");
             entity.ToTable("MovimientoCama");
-            
+
             entity.Property(e => e.IdMovimiento).HasColumnName("id_movimiento");
             entity.Property(e => e.IdInternacion).HasColumnName("id_internacion");
             entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
             entity.Property(e => e.NCama).HasColumnName("n_cama");
-            
+
             entity.Property(e => e.FechaInicio)
                 .HasColumnType("datetime")
                 .HasColumnName("fecha_inicio");

@@ -12,6 +12,12 @@ const Login = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+
+        if (!username.trim() || !password.trim()) {
+            alert("El usuario y la contraseña no pueden estar vacíos.");
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await api.post('/Auth/login', { username, password });

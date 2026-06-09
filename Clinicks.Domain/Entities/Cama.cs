@@ -9,24 +9,27 @@ public partial class Cama
     public Cama()
     {
         // By default EF Core will set IdEstado which will trigger the initialization.
+        // However, when created manually, we need to initialize the state explicitly.
+        InicializarEstadoDesdeId();
     }
 
     public int NCama { get; set; }
     public int IdHabitacion { get; set; }
-    
+
     private int _idEstado = 1;
-    public int IdEstado 
-    { 
-        get => _idEstado; 
-        set 
+    public int IdEstado
+    {
+        get => _idEstado;
+        set
         {
             _idEstado = value;
             InicializarEstadoDesdeId();
-        } 
+        }
     }
 
     private IEstadoCamaState _estadoActual;
 
+    // Resuelve dinámicamente la instancia del estado (State Pattern) según el ID en base de datos.
     private void InicializarEstadoDesdeId()
     {
         _estadoActual = _idEstado switch
@@ -38,6 +41,7 @@ public partial class Cama
         };
     }
 
+    // Efectúa la transición de estado actualizando tanto la lógica (objeto) como la persistencia (ID).
     public void CambiarEstado(IEstadoCamaState nuevoEstado)
     {
         _estadoActual = nuevoEstado;

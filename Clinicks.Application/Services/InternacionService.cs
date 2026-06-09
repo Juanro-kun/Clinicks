@@ -14,23 +14,31 @@ public class InternacionService : IInternacionService
     private readonly IHabitacionRepository _habitacionRepository;
     private readonly IUnidadDeTrabajo _unidadDeTrabajo;
     private readonly ICurrentUserProvider _currentUserProvider;
+    private readonly IPacienteRepository _pacienteRepository;
 
     public InternacionService(
-        IInternacionRepository internacionRepository, 
+        IInternacionRepository internacionRepository,
         IHabitacionRepository habitacionRepository,
         IUnidadDeTrabajo unidadDeTrabajo,
-        ICurrentUserProvider currentUserProvider)
+        ICurrentUserProvider currentUserProvider,
+        IPacienteRepository pacienteRepository)
     {
         _internacionRepository = internacionRepository;
         _habitacionRepository = habitacionRepository;
         _unidadDeTrabajo = unidadDeTrabajo;
         _currentUserProvider = currentUserProvider;
+        _pacienteRepository = pacienteRepository;
     }
 
     public async Task<bool> ProcesarInternacionDePaciente(InternacionRequestDto request)
     {
-        var internacionActiva = await _internacionRepository.ObtenerInternacionActiva(request.Dni);
-        if (internacionActiva != null)
+        var paciente = await _pacienteRepository.ObtenerPacientePorDni(request.Dni);
+        if (paciente == null)
+        {
+            throw new NotFoundException("El paciente no existe.");
+        }
+
+        if (paciente.TieneInternacionActiva())
         {
             throw new ConflictException("El paciente ya se encuentra internado actualmente.");
         }
@@ -41,15 +49,14 @@ public class InternacionService : IInternacionService
             throw new NotFoundException("La cama seleccionada no existe.");
         }
 
-        var existeMovimientoActivoEnCama = await _internacionRepository.ExisteMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (existeMovimientoActivoEnCama || !cama.EstaLibre())
+        if (!cama.EstaLibre())
         {
             throw new ConflictException("La cama seleccionada no está libre.");
         }
 
         int? creadorId = _currentUserProvider.GetCurrentUserId();
 
-        var nuevaInternacion = Internacion.Crear(request.Dni, cama);
+        var nuevaInternacion = Internacion.CrearInternacion(request.Dni, cama);
         nuevaInternacion.CreadoPorUsuarioId = creadorId;
 
         _internacionRepository.Agregar(nuevaInternacion);
@@ -66,7 +73,13 @@ public class InternacionService : IInternacionService
 
     public async Task<bool> ProcesarAltaMedica(int dni)
     {
-        var internacion = await _internacionRepository.ObtenerInternacionActiva(dni);
+        var paciente = await _pacienteRepository.ObtenerPacientePorDni(dni);
+        if (paciente == null || !paciente.TieneInternacionActiva())
+        {
+            return false;
+        }
+
+        var internacion = paciente.Internaciones.FirstOrDefault(i => i.FechaEgreso == null);
         if (internacion == null)
         {
             return false;
@@ -80,10 +93,23 @@ public class InternacionService : IInternacionService
 
     public async Task<bool> TrasladarPaciente(TrasladoRequestDto request)
     {
-        var internacion = await _internacionRepository.ObtenerInternacionActiva(request.Dni);
+        var paciente = await _pacienteRepository.ObtenerPacientePorDni(request.Dni);
+        if (paciente == null || !paciente.TieneInternacionActiva())
+        {
+            return false;
+        }
+
+        var internacion = paciente.Internaciones.FirstOrDefault(i => i.FechaEgreso == null);
         if (internacion == null)
         {
             return false;
+        }
+
+        // Verifica que no estemos intentando trasladar al paciente a la misma cama donde ya está.
+        var movimientoActual = internacion.MovimientosCama.FirstOrDefault(m => m.FechaFin == null);
+        if (movimientoActual != null && movimientoActual.IdHabitacion == request.IdHabitacion && movimientoActual.NCama == request.NCama)
+        {
+            throw new ConflictException("El paciente ya se encuentra en la cama de destino.");
         }
 
         var nuevaCama = await _habitacionRepository.ObtenerCama(request.IdHabitacion, request.NCama);
@@ -92,8 +118,8 @@ public class InternacionService : IInternacionService
             throw new NotFoundException("La cama de destino no existe.");
         }
 
-        var existeMovimientoActivoEnCama = await _internacionRepository.ExisteMovimientoActivoEnCama(request.IdHabitacion, request.NCama);
-        if (existeMovimientoActivoEnCama || !nuevaCama.EstaLibre())
+        // Asegura que la nueva cama esté completamente libre antes de efectuar el traspaso.
+        if (!nuevaCama.EstaLibre())
         {
             throw new ConflictException("La cama de destino no está libre.");
         }

@@ -19,14 +19,6 @@ namespace Clinicks.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Internacion?> ObtenerInternacionActiva(int dni)
-        {
-            return await _context.Internaciones
-                .Include(i => i.MovimientosCama)
-                    .ThenInclude(m => m.CamaNavigation)
-                .FirstOrDefaultAsync(i => i.Dni == dni && i.FechaEgreso == null);
-        }
-
         public async Task<Internacion?> ObtenerInternacionPorId(int idInternacion)
         {
             return await _context.Internaciones.FirstOrDefaultAsync(i => i.IdInternacion == idInternacion);
@@ -49,11 +41,6 @@ namespace Clinicks.Infrastructure.Repositories
                 .FirstOrDefaultAsync(m => m.IdInternacion == idInternacion && m.FechaFin == null);
         }
 
-        public async Task<bool> ExisteMovimientoActivoEnCama(int idHabitacion, int nCama)
-        {
-            return await _context.MovimientosCama.AnyAsync(m => m.IdHabitacion == idHabitacion && m.NCama == nCama && m.FechaFin == null);
-        }
-
         public void ModificarMovimiento(MovimientoCama movimiento)
         {
             _context.MovimientosCama.Update(movimiento);
@@ -68,13 +55,14 @@ namespace Clinicks.Infrastructure.Repositories
                 .ToListAsync();
 
             var internacionesIds = internaciones.Select(i => i.IdInternacion).ToList();
-            
+
+            // Convierte a diccionario para optimizar la carga de relaciones y evitar el problema N+1.
             var movimientosActivos = await _context.MovimientosCama
                 .Include(m => m.HabitacionNavigation)
                 .Where(m => internacionesIds.Contains(m.IdInternacion) && m.FechaFin == null)
                 .ToDictionaryAsync(m => m.IdInternacion);
 
-            return internaciones.Select(i => 
+            return internaciones.Select(i =>
             {
                 var mov = movimientosActivos.GetValueOrDefault(i.IdInternacion);
                 return new InternacionResponseDto

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Plus, Search, LogOut, Users, ClipboardList, X, Trash2, Pencil, BedDouble } from "lucide-react"
+import { Plus, Search, LogOut, Users, ClipboardList, X, Trash2, Pencil, BedDouble, ChevronLeft, ChevronRight } from "lucide-react"
 import api from "../api/api"
 import { useNavigate } from "react-router-dom"
 
@@ -8,6 +8,13 @@ export default function Pacientes() {
   const [patients, setPatients] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [pacienteAEliminar, setPacienteAEliminar] = useState(null)
+  const [notification, setNotification] = useState(null)
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   
   // Estado para saber si estamos editando o creando uno nuevo
   const [isEditing, setIsEditing] = useState(false)
@@ -32,15 +39,28 @@ export default function Pacientes() {
   
   const navigate = useNavigate()
 
-  const obtenerListaDePacientes = async () => {
+  const obtenerListaDePacientes = async (page = 1) => {
     try {
-      const res = await api.get('/Pacientes')
+      let url = `/Pacientes?page=${page}&pageSize=15`;
+      const termino = searchTerm.trim();
+      if (termino) {
+        url = `/Pacientes/buscar?termino=${encodeURIComponent(termino)}&page=${page}&pageSize=15`;
+      }
+      const res = await api.get(url)
       console.log("Pacientes recibidos:", res.data)
-      // Asegurarnos de que sea un array
-      if (Array.isArray(res.data)) {
-        setPatients(res.data)
-      } else if (res.data && res.data.$values) {
-        setPatients(res.data.$values)
+      
+      const data = res.data;
+      if (data && data.items) {
+          // Si tiene items, es el PaginatedResult
+          const items = Array.isArray(data.items) ? data.items : (data.items.$values || []);
+          setPatients(items);
+          setCurrentPage(data.currentPage);
+          setTotalPages(data.totalPages);
+          setTotalCount(data.totalCount);
+      } else if (Array.isArray(data)) {
+        setPatients(data)
+      } else if (data && data.$values) {
+        setPatients(data.$values)
       } else {
         setPatients([])
         setError("Formato de respuesta desconocido")
@@ -87,7 +107,23 @@ export default function Pacientes() {
   }, [patientForm.idProvincia])
 
   useEffect(() => { 
-    obtenerListaDePacientes();
+    obtenerListaDePacientes(currentPage);
+  }, [currentPage])
+
+  // Debounce para el buscador
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        obtenerListaDePacientes(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm])
+
+  useEffect(() => {
     obtenerListasDeUbicaciones();
   }, [])
 
@@ -157,15 +193,33 @@ export default function Pacientes() {
   const registrarOActualizarPaciente = async (e) => {
         e.preventDefault();
 
-        // 1. Validaciones manuales rápidas
-        if (patientForm.dni.toString().length < 7 || patientForm.dni.toString().length > 8) {
-            alert("DNI invalido");
+        // 1. Validaciones manuales estrictas
+        const dniStr = patientForm.dni.toString().trim();
+        if (!/^\d{7,8}$/.test(dniStr)) {
+            alert("El DNI es inválido. Debe contener entre 7 y 8 números enteros sin puntos ni letras.");
             return;
         }
 
-        if (patientForm.nombre.trim().length < 2 || patientForm.apellido.trim().length < 1) {
-            alert("Nombre o Apellido muy corto");
+        const nombreStr = patientForm.nombre.trim();
+        const apellidoStr = patientForm.apellido.trim();
+        const letrasRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+
+        if (nombreStr.length < 2 || !letrasRegex.test(nombreStr)) {
+            alert("El nombre es inválido. Debe tener al menos 2 caracteres y contener solo letras.");
             return;
+        }
+
+        if (apellidoStr.length < 1 || !letrasRegex.test(apellidoStr)) {
+            alert("El apellido es inválido. Debe tener al menos 1 caracter y contener solo letras.");
+            return;
+        }
+
+        if (patientForm.telefono) {
+            const telStr = patientForm.telefono.toString().trim();
+            if (!/^\d{8,15}$/.test(telStr)) {
+                alert("El teléfono es inválido. Debe contener entre 8 y 15 números sin espacios ni guiones.");
+                return;
+            }
         }
 
         // Formatear ubicaciones
@@ -176,6 +230,7 @@ export default function Pacientes() {
             idProvincia: patientForm.idProvincia ? parseInt(patientForm.idProvincia) : null,
             idPais: patientForm.idPais ? parseInt(patientForm.idPais) : null
         };
+        // Limpiamos propiedades de solo lectura (Dato calculado) que la API no espera recibir
         delete formAEnviar.ciudadNombre;
         delete formAEnviar.provinciaNombre;
         delete formAEnviar.paisNombre;
@@ -202,32 +257,38 @@ export default function Pacientes() {
         }
     };
 
-  const eliminarRegistroPaciente = async (dni) => {
-    if (window.confirm("¿Esta seguro de eliminar a este paciente? Sus datos no se podrán recuperar")) {
-      try {
-        await api.delete(`/Pacientes/${dni}`)
-        setPatients(patients.filter(p => p.dni !== dni))
-      } catch (err) {
-        alert("No se pudo eliminar.")
+  const showNotification = (type, message) => {
+    setNotification({ type, message })
+    setTimeout(() => setNotification(null), 3000)
+  }
+
+  const prepararEliminarPaciente = (p) => {
+    setPacienteAEliminar(p)
+    setIsDeleteModalOpen(true)
+  }
+
+  const confirmarEliminarPaciente = async () => {
+    if (!pacienteAEliminar) return;
+    try {
+      await api.delete(`/Pacientes/${pacienteAEliminar.dni}`)
+      setPatients(patients.filter(p => p.dni !== pacienteAEliminar.dni))
+      showNotification('success', "Paciente eliminado con éxito")
+      setIsDeleteModalOpen(false)
+      setPacienteAEliminar(null)
+    } catch (err) {
+      if (err.response?.status === 409) {
+        showNotification('error', "No se puede eliminar a un paciente internado")
+      } else {
+        showNotification('error', err.response?.data?.Message || "No se pudo eliminar al paciente.")
       }
+      setIsDeleteModalOpen(false)
+      setPacienteAEliminar(null)
     }
   }
 
   const filteredPatients = useMemo(() => {
-    const term = searchTerm.toLowerCase()
-    return patients.filter(p => {
-      // Filtrar pacientes eliminados (Activo == false)
-      if (p.activo === false) return false;
-      
-      const dniStr = p.dni ? p.dni.toString() : "";
-      const nombreStr = p.nombre ? p.nombre.toLowerCase() : "";
-      const apellidoStr = p.apellido ? p.apellido.toLowerCase() : "";
-
-      return dniStr.includes(term) || 
-             nombreStr.includes(term) || 
-             apellidoStr.includes(term);
-    });
-  }, [patients, searchTerm])
+    return patients.filter(p => p.activo !== false);
+  }, [patients])
 
   return (
     <>
@@ -274,8 +335,15 @@ export default function Pacientes() {
             </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-            {filteredPatients.map((p) => (
-                <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
+            {filteredPatients.length === 0 ? (
+                <tr>
+                    <td colSpan="4" className="px-8 py-12 text-center text-slate-500 font-medium">
+                        Ningún paciente encontrado
+                    </td>
+                </tr>
+            ) : (
+                filteredPatients.map((p) => (
+                    <tr key={p.dni} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-8 py-5 text-sm font-bold text-slate-700">{p.dni}</td>
                 <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
@@ -310,7 +378,7 @@ export default function Pacientes() {
                         <Pencil className="w-4 h-4" />
                     </button>
                     <button 
-                        onClick={() => eliminarRegistroPaciente(p.dni)}
+                        onClick={() => prepararEliminarPaciente(p)}
                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="Eliminar"
                     >
@@ -319,10 +387,35 @@ export default function Pacientes() {
                     </div>
                 </td>
                 </tr>
-            ))}
+            )))}
             </tbody>
         </table>
         </div>
+
+        {/* Controles de Paginación */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span className="text-sm text-slate-500">
+              Mostrando página <span className="font-bold text-slate-700">{currentPage}</span> de <span className="font-bold text-slate-700">{totalPages}</span> ({totalCount} pacientes en total)
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* MODAL REUTILIZABLE */}
       {isModalOpen && (
@@ -478,6 +571,49 @@ export default function Pacientes() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* MODAL ELIMINAR PACIENTE */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl text-center">
+            <div className="mx-auto w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-6">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">
+              ¿Seguro que quiere eliminar al Paciente?
+            </h2>
+            <p className="text-slate-500 mb-8">
+              Está a punto de eliminar a <strong>{pacienteAEliminar?.nombre} {pacienteAEliminar?.apellido}</strong>. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setPacienteAEliminar(null);
+                }}
+                className="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarEliminarPaciente}
+                className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOTIFICACIONES TOAST */}
+      {notification && (
+        <div className={`fixed bottom-6 right-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 z-50 transition-all duration-300
+          ${notification.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+          {notification.type === 'success' ? <ClipboardList className="w-5 h-5" /> : <X className="w-5 h-5" />}
+          <span className="font-semibold">{notification.message}</span>
         </div>
       )}
     </>

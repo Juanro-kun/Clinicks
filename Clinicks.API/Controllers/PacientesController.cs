@@ -24,10 +24,21 @@ namespace Clinicks.API.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerTodosLosPacientes()
+        public async Task<IActionResult> ObtenerTodosLosPacientes([FromQuery] int page = 1, [FromQuery] int pageSize = 15, [FromQuery] bool fetchAll = false)
         {
-            var pacientes = await _pacienteService.ListarPacientes();
-            return Ok(pacientes);
+            var resultado = await _pacienteService.ListarPacientes(page, pageSize, fetchAll);
+            return Ok(resultado);
+        }
+
+        [HttpGet("buscar")]
+        public async Task<IActionResult> BuscarPacientes([FromQuery] string termino, [FromQuery] int page = 1, [FromQuery] int pageSize = 15)
+        {
+            if (string.IsNullOrWhiteSpace(termino))
+            {
+                return BadRequest("El término de búsqueda no puede estar vacío.");
+            }
+            var resultado = await _pacienteService.BuscarPacientes(termino, page, pageSize);
+            return Ok(resultado);
         }
 
         [HttpGet("{dni}")]

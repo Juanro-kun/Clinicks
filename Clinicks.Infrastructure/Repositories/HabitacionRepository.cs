@@ -39,13 +39,14 @@ namespace Clinicks.Infrastructure.Repositories
                         .ThenInclude(i => i.PacienteNavigation)
                 .ToListAsync();
 
-            return camas.Select(c => 
+            return camas.Select(c =>
             {
                 var movimientoActivo = c.MovimientosCama.FirstOrDefault(m => m.FechaFin == null);
                 var internacionActiva = movimientoActivo?.InternacionNavigation;
                 var estaOcupada = movimientoActivo != null;
 
-                if (!estaOcupada && c.EstaOcupada) {
+                if (!estaOcupada && c.EstaOcupada)
+                {
                     estaOcupada = true;
                 }
 

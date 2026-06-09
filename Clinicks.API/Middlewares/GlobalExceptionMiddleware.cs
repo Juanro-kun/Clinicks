@@ -36,6 +36,7 @@ namespace Clinicks.API.Middlewares
         {
             context.Response.ContentType = "application/json";
 
+            // Mapea las excepciones de negocio a los códigos de estado HTTP correspondientes.
             context.Response.StatusCode = exception switch
             {
                 NotFoundException => (int)HttpStatusCode.NotFound,

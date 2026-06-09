@@ -22,7 +22,7 @@ namespace Clinicks.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var token = await _authService.IniciarSesion(request.Username, request.Password);
-            
+
             if (token == null)
                 return Unauthorized("Usuario o contraseña incorrectos");
 

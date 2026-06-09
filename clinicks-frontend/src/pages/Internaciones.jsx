@@ -56,9 +56,18 @@ export default function Internaciones() {
 
   const confirmarTraslado = async (e) => {
     e.preventDefault()
-    if (!trasladoForm.idHabitacion || !trasladoForm.nCama) {
-      alert("Seleccione habitación y cama de destino")
-      return
+
+    const idHab = parseInt(trasladoForm.idHabitacion);
+    const nCama = parseInt(trasladoForm.nCama);
+
+    if (isNaN(idHab) || idHab <= 0) {
+      alert("Seleccione una habitación de destino válida.");
+      return;
+    }
+
+    if (isNaN(nCama) || nCama <= 0) {
+      alert("Seleccione una cama de destino válida.");
+      return;
     }
     
     try {

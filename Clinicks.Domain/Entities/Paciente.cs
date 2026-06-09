@@ -38,6 +38,8 @@ public partial class Paciente
         return Internaciones.Any(i => i.FechaEgreso == null);
     }
 
+    // Baja lógica (Soft Delete): Previene borrar registros históricos, 
+    // y bloquea la operación si el paciente aún está internado.
     public void Eliminar()
     {
         if (TieneInternacionActiva())

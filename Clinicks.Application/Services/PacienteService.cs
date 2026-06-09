@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Clinicks.Application.DTOs.Pacientes;
+using Clinicks.Application.DTOs.Shared;
 using Clinicks.Application.Interfaces;
 using Clinicks.Application.Exceptions;
 using Clinicks.Domain.Entities;
@@ -14,7 +15,7 @@ namespace Clinicks.Application.Services
         private readonly ICurrentUserProvider _currentUserProvider;
 
         public PacienteService(
-            IPacienteRepository repository, 
+            IPacienteRepository repository,
             IUnidadDeTrabajo unidadDeTrabajo,
             ICurrentUserProvider currentUserProvider)
         {
@@ -23,9 +24,14 @@ namespace Clinicks.Application.Services
             _currentUserProvider = currentUserProvider;
         }
 
-        public async Task<IEnumerable<PacienteResponseDTO>> ListarPacientes()
+        public async Task<PaginatedResult<PacienteResponseDTO>> ListarPacientes(int page = 1, int pageSize = 15, bool fetchAll = false)
         {
-            return await _repository.ListarPacientes();
+            return await _repository.ListarPacientes(page, pageSize, fetchAll);
+        }
+
+        public async Task<PaginatedResult<PacienteResponseDTO>> BuscarPacientes(string terminoBusqueda, int page = 1, int pageSize = 15)
+        {
+            return await _repository.BuscarPacientes(terminoBusqueda, page, pageSize);
         }
 
         public async Task<PacienteResponseDTO?> BuscarPacientePorDni(int dni)
@@ -59,10 +65,15 @@ namespace Clinicks.Application.Services
             // 2. Armamos el grafo: si hay dirección, se la agregamos a la colección del paciente
             if (!string.IsNullOrWhiteSpace(pacienteDto.Calle))
             {
+                if (!pacienteDto.Altura.HasValue)
+                {
+                    throw new ValidationException("Debe proporcionar la altura de la calle especificada.");
+                }
+
                 paciente.Direcciones.Add(new Direccion
                 {
                     Calle = pacienteDto.Calle.Trim(),
-                    Altura = pacienteDto.Altura ?? 0,
+                    Altura = pacienteDto.Altura.Value,
                     IdCiudad = pacienteDto.IdCiudad
                 });
             }
@@ -86,17 +97,29 @@ namespace Clinicks.Application.Services
             paciente.Activo = pacienteDto.Activo;
 
 
-            //ESTO ANDA MAL, CREA UNA DIRECCION CADA VEZ QUE SE EJECUTA, HAY QUE ENCONTRAR UNA SOLUCION PERO POR AHORA QUEDA ASÍ
-            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle) && pacienteDto.Altura.HasValue)
+            if (!string.IsNullOrWhiteSpace(pacienteDto.Calle))
             {
-                var direccion = new Direccion
+                if (!pacienteDto.Altura.HasValue)
                 {
-                    Calle = pacienteDto.Calle.Trim(),
-                    Altura = pacienteDto.Altura.Value,
-                    IdCiudad = pacienteDto.IdCiudad,
-                    Dni = paciente.Dni
-                };
-                _repository.AgregarDireccion(direccion);
+                    throw new ValidationException("Debe proporcionar la altura de la calle especificada.");
+                }
+
+                var direccionExistente = paciente.Direcciones.FirstOrDefault();
+                if (direccionExistente != null)
+                {
+                    direccionExistente.Calle = pacienteDto.Calle.Trim();
+                    direccionExistente.Altura = pacienteDto.Altura.Value;
+                    direccionExistente.IdCiudad = pacienteDto.IdCiudad;
+                }
+                else
+                {
+                    paciente.Direcciones.Add(new Direccion
+                    {
+                        Calle = pacienteDto.Calle.Trim(),
+                        Altura = pacienteDto.Altura.Value,
+                        IdCiudad = pacienteDto.IdCiudad
+                    });
+                }
             }
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
@@ -110,16 +133,17 @@ namespace Clinicks.Application.Services
             {
                 return;
             }
-            
+
             try
             {
                 paciente.Eliminar();
             }
             catch (InvalidOperationException ex)
             {
+                // Traduce el error de dominio (por ej. paciente internado) a un error HTTP 409 Conflict.
                 throw new ConflictException(ex.Message);
             }
-            
+
             await _unidadDeTrabajo.GuardarCambiosAsync();
         }
     }

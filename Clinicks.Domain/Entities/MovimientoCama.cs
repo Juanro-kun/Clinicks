@@ -17,13 +17,18 @@ public partial class MovimientoCama
 
     public MovimientoCama() { }
 
-    public MovimientoCama(Cama cama)
+    private MovimientoCama(Cama cama)
     {
         IdHabitacion = cama.IdHabitacion;
         NCama = cama.NCama;
         FechaInicio = DateTime.Now;
         FechaFin = null;
         cama.Ocupar();
+    }
+
+    public static MovimientoCama CrearMovimientoCama(Cama cama)
+    {
+        return new MovimientoCama(cama);
     }
 
     public void FinalizarMovimiento()

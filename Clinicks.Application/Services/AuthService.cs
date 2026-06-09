@@ -10,7 +10,7 @@ namespace Clinicks.Application.Services
         private readonly IPasswordHasher _passwordHasher;
 
         public AuthService(
-            IAuthRepository repository, 
+            IAuthRepository repository,
             ITokenProvider tokenProvider,
             IPasswordHasher passwordHasher)
         {

@@ -14,10 +14,10 @@ public partial class Internacion
 
     public virtual Paciente? PacienteNavigation { get; set; }
     public virtual Usuario? CreadoPorUsuario { get; set; }
-    
+
     public virtual ICollection<MovimientoCama> MovimientosCama { get; set; } = new List<MovimientoCama>();
 
-    public static Internacion Crear(int dni, Cama cama)
+    public static Internacion CrearInternacion(int dni, Cama cama)
     {
         var internacion = new Internacion
         {
@@ -26,17 +26,19 @@ public partial class Internacion
             FechaEgreso = null
         };
 
-        var movimiento = new MovimientoCama(cama);
+        var movimiento = MovimientoCama.CrearMovimientoCama(cama);
         internacion.MovimientosCama.Add(movimiento);
-        
+
         return internacion;
     }
 
+    // Busca el movimiento que no tiene fecha de fin (es decir, la cama donde se encuentra actualmente).
     private MovimientoCama? ObtenerMovimientoActivo()
     {
         return MovimientosCama.FirstOrDefault(m => m.FechaFin == null);
     }
 
+    // Cierra el uso de la cama actual e inicia uno nuevo en la cama de destino.
     public void RegistrarTraslado(Cama nuevaCama)
     {
         var movimientoActual = ObtenerMovimientoActivo();
@@ -45,7 +47,7 @@ public partial class Internacion
             movimientoActual.FinalizarMovimiento();
         }
 
-        var nuevoMovimiento = new MovimientoCama(nuevaCama);
+        var nuevoMovimiento = MovimientoCama.CrearMovimientoCama(nuevaCama);
         MovimientosCama.Add(nuevoMovimiento);
     }
 

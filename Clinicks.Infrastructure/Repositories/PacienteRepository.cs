@@ -38,11 +38,74 @@ namespace Clinicks.Infrastructure.Repositories
             Activo = p.Activo
         };
 
-        public async Task<IEnumerable<PacienteResponseDTO>> ListarPacientes()
+        public async Task<Application.DTOs.Shared.PaginatedResult<PacienteResponseDTO>> ListarPacientes(int page = 1, int pageSize = 15, bool fetchAll = false)
         {
-            return await _context.Pacientes
-                .Select(MapToResponseDTO)
-                .ToListAsync();
+            var query = _context.Pacientes.AsQueryable();
+
+            var totalCount = await query.CountAsync();
+
+            var resultQuery = query.Select(MapToResponseDTO);
+
+            if (!fetchAll)
+            {
+                resultQuery = resultQuery.Skip((page - 1) * pageSize).Take(pageSize);
+            }
+            else
+            {
+                page = 1;
+                pageSize = totalCount > 0 ? totalCount : 1;
+            }
+
+            var items = await resultQuery.ToListAsync();
+
+            return new Application.DTOs.Shared.PaginatedResult<PacienteResponseDTO>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
+        }
+
+        public async Task<Application.DTOs.Shared.PaginatedResult<PacienteResponseDTO>> BuscarPacientes(string terminoBusqueda, int page = 1, int pageSize = 15)
+        {
+            var query = _context.Pacientes.AsQueryable();
+            var terminoLimpio = terminoBusqueda.Trim().ToLower();
+
+            if (int.TryParse(terminoLimpio, out _))
+            {
+                query = query.Where(p => p.Dni.ToString().Contains(terminoLimpio));
+            }
+            else
+            {
+                var palabras = terminoLimpio.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (palabras.Length == 1)
+                {
+                    query = query.Where(p => p.Nombre.ToLower().Contains(terminoLimpio) || p.Apellido.ToLower().Contains(terminoLimpio));
+                }
+                else if (palabras.Length >= 2)
+                {
+                    query = query.Where(p => 
+                        (p.Nombre + " " + p.Apellido).ToLower().Contains(terminoLimpio) ||
+                        (p.Apellido + " " + p.Nombre).ToLower().Contains(terminoLimpio)
+                    );
+                }
+            }
+
+            var totalCount = await query.CountAsync();
+            var resultQuery = query.Select(MapToResponseDTO)
+                                   .Skip((page - 1) * pageSize)
+                                   .Take(pageSize);
+
+            var items = await resultQuery.ToListAsync();
+
+            return new Application.DTOs.Shared.PaginatedResult<PacienteResponseDTO>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                CurrentPage = page,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
         }
 
         public async Task<PacienteResponseDTO?> BuscarPacientePorDni(int dni)
@@ -60,7 +123,10 @@ namespace Clinicks.Infrastructure.Repositories
 
         public async Task<Paciente?> ObtenerPacientePorDni(int dni)
         {
-            return await _context.Pacientes.Include(p => p.Internaciones).FirstOrDefaultAsync(p => p.Dni == dni);
+            return await _context.Pacientes
+                .Include(p => p.Internaciones)
+                .Include(p => p.Direcciones)
+                .FirstOrDefaultAsync(p => p.Dni == dni);
         }
 
         public void Agregar(Paciente paciente)
@@ -71,11 +137,6 @@ namespace Clinicks.Infrastructure.Repositories
         public void Modificar(Paciente paciente)
         {
             _context.Pacientes.Update(paciente);
-        }
-
-        public void AgregarDireccion(Direccion direccion)
-        {
-            _context.Direcciones.Add(direccion);
         }
     }
 }
