@@ -183,7 +183,7 @@ export default function Pacientes() {
             idHabitacion: parseInt(internarForm.idHabitacion),
             nCama: parseInt(internarForm.nCama)
         })
-        showNotification('success', "¡Paciente internado con éxito!")
+        showNotification('success', "Paciente internado con exito")
         setIsInternarModalOpen(false)
         obtenerListaDePacientes(currentPage)
     } catch(err) {
@@ -202,6 +202,11 @@ export default function Pacientes() {
   // 3. GUARDAR (POST o PUT)
   const registrarOActualizarPaciente = async (e) => {
         e.preventDefault();
+
+        if (!patientForm.dni || !patientForm.nombre.trim() || !patientForm.apellido.trim()) {
+            setError("Se deben llenar los campos obligatorios (DNI, nombre y Apellido).");
+            return;
+        }
 
         // 1. Validaciones manuales estrictas
         const dniStr = patientForm.dni.toString().trim();
@@ -235,7 +240,9 @@ export default function Pacientes() {
         // Formatear ubicaciones
         const formAEnviar = {
             ...patientForm,
-            calle: capitalizarPalabras(patientForm.calle),
+            calle: patientForm.calle ? capitalizarPalabras(patientForm.calle) : null,
+            altura: patientForm.altura ? parseInt(patientForm.altura) : null,
+            telefono: patientForm.telefono ? patientForm.telefono : null,
             idCiudad: patientForm.idCiudad ? parseInt(patientForm.idCiudad) : null,
             idProvincia: patientForm.idProvincia ? parseInt(patientForm.idProvincia) : null,
             idPais: patientForm.idPais ? parseInt(patientForm.idPais) : null
@@ -250,8 +257,10 @@ export default function Pacientes() {
         try {
             if (isEditing) {
                 await api.put(`/Pacientes/${patientForm.dni}`, formAEnviar);
+                showNotification('success', "Paciente editado con exito");
             } else {
                 await api.post('/Pacientes', formAEnviar);
+                showNotification('success', "Paciente Registrado con Exito");
             }
             cerrarFormularioPaciente();
             obtenerListaDePacientes();
@@ -282,7 +291,7 @@ export default function Pacientes() {
     try {
       await api.delete(`/Pacientes/${pacienteAEliminar.dni}`)
       setPatients(patients.filter(p => p.dni !== pacienteAEliminar.dni))
-      showNotification('success', "Paciente eliminado con éxito")
+      showNotification('success', "Paciente eliminado con exito")
       setIsDeleteModalOpen(false)
       setPacienteAEliminar(null)
     } catch (err) {
@@ -432,14 +441,15 @@ export default function Pacientes() {
               <button onClick={cerrarFormularioPaciente}><X className="text-slate-400" /></button>
             </div>
             
-            <form onSubmit={registrarOActualizarPaciente} className="space-y-4">
+            <form onSubmit={registrarOActualizarPaciente} className="space-y-4" noValidate>
               {/* Si estamos editando, el DNI suele ser fijo (PK) */}
               <input 
-                type="number" placeholder="DNI" 
+                type="text" 
+                inputMode="numeric"
+                placeholder="DNI" 
                 className={`w-full p-3 border border-slate-200 rounded-xl ${isEditing ? 'bg-slate-50 text-slate-400' : ''}`}
                 value={patientForm.dni}
                 disabled={isEditing}
-                required
                 maxLength={8}
                 onChange={e =>{
                     const valorLimpio = e.target.value.replace(/\D/g, '');
@@ -447,12 +457,18 @@ export default function Pacientes() {
                 }}/>
               
               <div className="flex gap-4">
-                <input type="text" placeholder="Nombre" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl" required
+                <input type="text" placeholder="Nombre" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.nombre}
-                  onChange={e => setPatientForm({...patientForm, nombre: e.target.value})} />
-                <input type="text" placeholder="Apellido" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl" required
+                  onChange={e => {
+                      const soloLetras = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+                      setPatientForm({...patientForm, nombre: soloLetras});
+                  }} />
+                <input type="text" placeholder="Apellido" maxLength={50} className="w-1/2 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.apellido}
-                  onChange={e => setPatientForm({...patientForm, apellido: e.target.value})} />
+                  onChange={e => {
+                      const soloLetras = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+                      setPatientForm({...patientForm, apellido: soloLetras});
+                  }} />
               </div>
 
               <div className="flex gap-4">
@@ -463,9 +479,12 @@ export default function Pacientes() {
                   {callesList.map(c => <option key={c} value={c} />)}
                 </datalist>
 
-                <input type="number" placeholder="Altura" className="w-1/3 p-3 border border-slate-200 rounded-xl"
+                <input type="text" inputMode="numeric" placeholder="Altura" className="w-1/3 p-3 border border-slate-200 rounded-xl"
                   value={patientForm.altura || ''}
-                  onChange={e => setPatientForm({...patientForm, altura: e.target.value})} />
+                  onChange={e => {
+                      const soloNumeros = e.target.value.replace(/\D/g, '');
+                      setPatientForm({...patientForm, altura: soloNumeros});
+                  }} />
               </div>
 
               <div className="flex gap-4">
@@ -586,7 +605,7 @@ export default function Pacientes() {
               <Trash2 className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">
-              ¿Seguro que quiere eliminar al Paciente?
+              ¿Seguro que quiere eliminar al paciente?
             </h2>
             <p className="text-slate-500 mb-8">
               Está a punto de eliminar a <strong>{pacienteAEliminar?.nombre} {pacienteAEliminar?.apellido}</strong>. Esta acción no se puede deshacer.

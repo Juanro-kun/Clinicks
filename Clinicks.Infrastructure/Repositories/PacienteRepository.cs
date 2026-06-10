@@ -79,15 +79,20 @@ namespace Clinicks.Infrastructure.Repositories
             else
             {
                 var palabras = terminoLimpio.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                
+                string collation = "SQL_Latin1_General_CP1_CI_AI";
+
                 if (palabras.Length == 1)
                 {
-                    query = query.Where(p => p.Nombre.ToLower().Contains(terminoLimpio) || p.Apellido.ToLower().Contains(terminoLimpio));
+                    query = query.Where(p => 
+                        EF.Functions.Collate(p.Nombre, collation).Contains(terminoLimpio) || 
+                        EF.Functions.Collate(p.Apellido, collation).Contains(terminoLimpio));
                 }
                 else if (palabras.Length >= 2)
                 {
                     query = query.Where(p => 
-                        (p.Nombre + " " + p.Apellido).ToLower().Contains(terminoLimpio) ||
-                        (p.Apellido + " " + p.Nombre).ToLower().Contains(terminoLimpio)
+                        EF.Functions.Collate(p.Nombre + " " + p.Apellido, collation).Contains(terminoLimpio) ||
+                        EF.Functions.Collate(p.Apellido + " " + p.Nombre, collation).Contains(terminoLimpio)
                     );
                 }
             }

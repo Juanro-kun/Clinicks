@@ -303,7 +303,9 @@ public partial class ClinicksDbContext : DbContext
         modelBuilder.Entity<Paciente>().HasData(
             new Paciente { Dni = 12345678, Nombre = "Juan", Apellido = "Pérez", Telefono = "1122334455", Activo = true, CreadoPorUsuarioId = 1 },
             new Paciente { Dni = 87654321, Nombre = "María", Apellido = "Gómez", Telefono = "1155443322", Activo = true, CreadoPorUsuarioId = 1 },
-            new Paciente { Dni = 45678912, Nombre = "Carlos", Apellido = "Rodríguez", Telefono = "1199887766", Activo = true, CreadoPorUsuarioId = 1 }
+            new Paciente { Dni = 45678912, Nombre = "Carlos", Apellido = "Rodríguez", Telefono = "1199887766", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 33445566, Nombre = "Laura", Apellido = "Fernández", Telefono = "1144556677", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 22334455, Nombre = "Diego", Apellido = "Martínez", Telefono = "1166778899", Activo = true, CreadoPorUsuarioId = 1 }
         );
 
         OnModelCreatingPartial(modelBuilder);

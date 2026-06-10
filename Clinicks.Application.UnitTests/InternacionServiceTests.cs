@@ -167,4 +167,55 @@ public class InternacionServiceTests
         await act.Should().ThrowAsync<ConflictException>()
             .WithMessage("El paciente ya se encuentra en la cama de destino.");
     }
+
+    [Fact]
+    public async Task TrasladarPaciente_PacienteNoInternado_DebeRetornarFalse()
+    {
+        // Arrange
+        var request = new TrasladoRequestDto { Dni = 12345678, IdHabitacion = 2, NCama = 202 };
+        var paciente = new Paciente { Dni = request.Dni }; 
+        // No agregamos ninguna internación activa al paciente
+        
+        _pacienteRepoMock.ObtenerPacientePorDni(request.Dni).Returns(paciente);
+
+        // Act
+        var result = await _sut.TrasladarPaciente(request);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TrasladarPaciente_DatosValidos_DebeTrasladarYGuardar()
+    {
+        // Arrange
+        var request = new TrasladoRequestDto { Dni = 12345678, IdHabitacion = 2, NCama = 202 };
+        
+        var camaOrigen = new Cama { IdHabitacion = 1, NCama = 101 };
+        var paciente = new Paciente { Dni = request.Dni };
+        
+        // Creamos la internación activa en la cama origen
+        var internacion = Internacion.CrearInternacion(request.Dni, camaOrigen);
+        
+        // Dado que en el Unit Test no estamos usando Entity Framework, 
+        // debemos enlazar manualmente la propiedad de navegación para que `FinalizarMovimiento()` funcione.
+        var movimiento = internacion.MovimientosCama.First();
+        movimiento.CamaNavigation = camaOrigen; 
+        
+        paciente.Internaciones.Add(internacion);
+
+        var camaDestino = new Cama { IdHabitacion = 2, NCama = 202 }; // Libre por defecto
+
+        _pacienteRepoMock.ObtenerPacientePorDni(request.Dni).Returns(paciente);
+        _habitacionRepoMock.ObtenerCama(request.IdHabitacion, request.NCama).Returns(camaDestino);
+
+        // Act
+        var result = await _sut.TrasladarPaciente(request);
+
+        // Assert
+        result.Should().BeTrue();
+        camaOrigen.EstaLibre().Should().BeTrue(); // Verifica que la cama de origen se liberó
+        camaDestino.EstaLibre().Should().BeFalse(); // Verifica que la cama destino se ocupó
+        await _unidadDeTrabajoMock.Received(1).GuardarCambiosAsync(); // Verifica que se persistió
+    }
 }

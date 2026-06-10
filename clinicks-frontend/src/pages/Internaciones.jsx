@@ -1,10 +1,17 @@
 import { useState, useEffect, useMemo } from "react"
-import { Search, LogOut, CheckCircle, Activity, ArrowLeftRight, X } from "lucide-react"
+import { Search, LogOut, CheckCircle, Activity, ArrowLeftRight, X, ClipboardList } from "lucide-react"
 import api from "../api/api"
 
 export default function Internaciones() {
   const [internaciones, setInternaciones] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+  
+  const [notification, setNotification] = useState(null)
+
+  const showNotification = (type, message) => {
+    setNotification({ type, message })
+    setTimeout(() => setNotification(null), 3000)
+  }
   
   // Estados para Traslado
   const [isTrasladarModalOpen, setIsTrasladarModalOpen] = useState(false)
@@ -12,6 +19,10 @@ export default function Internaciones() {
   const [habitacionesList, setHabitacionesList] = useState([])
   const [camasList, setCamasList] = useState([])
   const [trasladoForm, setTrasladoForm] = useState({ idHabitacion: '', nCama: '' })
+
+  // Estados para Dar de Alta (Modal de Confirmación)
+  const [isAltaModalOpen, setIsAltaModalOpen] = useState(false)
+  const [pacienteAAlta, setPacienteAAlta] = useState(null)
 
   const obtenerInternaciones = async () => {
     try {
@@ -26,15 +37,23 @@ export default function Internaciones() {
     obtenerInternaciones()
   }, [])
 
-  const darDeAlta = async (dni) => {
-    if (window.confirm("¿Está seguro de que desea dar de alta a este paciente? Esta acción registrará un egreso y liberará la cama.")) {
-      try {
-        await api.post(`/Internaciones/${dni}/alta`)
-        alert("Paciente dado de alta exitosamente.")
-        obtenerInternaciones() // Refrescar la lista
-      } catch (err) {
-        alert(err.response?.data || "No se pudo dar de alta al paciente.")
-      }
+  const prepararAlta = (internacion) => {
+    setPacienteAAlta(internacion)
+    setIsAltaModalOpen(true)
+  }
+
+  const confirmarAlta = async () => {
+    if (!pacienteAAlta) return;
+    try {
+      await api.post(`/Internaciones/${pacienteAAlta.dni}/alta`)
+      showNotification('success', "Alta medica registrada con exito")
+      setIsAltaModalOpen(false)
+      setPacienteAAlta(null)
+      obtenerInternaciones() // Refrescar la lista
+    } catch (err) {
+      showNotification('error', err.response?.data || "No se pudo dar de alta al paciente.")
+      setIsAltaModalOpen(false)
+      setPacienteAAlta(null)
     }
   }
 
@@ -61,12 +80,12 @@ export default function Internaciones() {
     const nCama = parseInt(trasladoForm.nCama);
 
     if (isNaN(idHab) || idHab <= 0) {
-      alert("Seleccione una habitación de destino válida.");
+      showNotification('error', "Seleccione una habitación de destino válida.");
       return;
     }
 
     if (isNaN(nCama) || nCama <= 0) {
-      alert("Seleccione una cama de destino válida.");
+      showNotification('error', "Seleccione una cama de destino válida.");
       return;
     }
     
@@ -76,21 +95,34 @@ export default function Internaciones() {
         idHabitacion: parseInt(trasladoForm.idHabitacion),
         nCama: parseInt(trasladoForm.nCama)
       })
-      alert("¡Paciente trasladado con éxito!")
+      showNotification('success', "Traslado realizado con exito")
       setIsTrasladarModalOpen(false)
       obtenerInternaciones()
     } catch (err) {
-      alert(err.response?.data || "Error al trasladar")
+      showNotification('error', err.response?.data || "Error al trasladar")
     }
   }
 
   const filteredInternaciones = useMemo(() => {
-    const term = searchTerm.toLowerCase()
-    return internaciones.filter(i => 
-      i.dni.toString().includes(term) || 
-      i.nombrePaciente.toLowerCase().includes(term) || 
-      i.apellidoPaciente.toLowerCase().includes(term)
-    )
+    if (!searchTerm) return internaciones;
+    
+    // Función auxiliar para quitar acentos
+    const removerAcentos = (str) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    const term = removerAcentos(searchTerm.toLowerCase());
+
+    return internaciones.filter(i => {
+      const dniStr = i.dni.toString();
+      // Concatenar de ambas formas para soportar "Juan Perez" y "Perez Juan"
+      const nombreCompleto = removerAcentos(`${i.nombrePaciente} ${i.apellidoPaciente}`.toLowerCase());
+      const apellidoNombre = removerAcentos(`${i.apellidoPaciente} ${i.nombrePaciente}`.toLowerCase());
+      
+      return dniStr.includes(term) || 
+             nombreCompleto.includes(term) || 
+             apellidoNombre.includes(term)
+    })
   }, [internaciones, searchTerm])
 
   return (
@@ -164,7 +196,7 @@ export default function Internaciones() {
                                     Trasladar
                                 </button>
                                 <button 
-                                    onClick={() => darDeAlta(i.dni)}
+                                    onClick={() => prepararAlta(i)}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
                                 >
                                     <CheckCircle className="w-4 h-4" />
@@ -241,6 +273,49 @@ export default function Internaciones() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIRMAR ALTA */}
+      {isAltaModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl text-center">
+            <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">
+              ¿Seguro que desea registrar el Alta Medica?
+            </h2>
+            <p className="text-slate-500 mb-8">
+              Está a punto de dar de alta a <strong>{pacienteAAlta?.nombrePaciente} {pacienteAAlta?.apellidoPaciente}</strong>. Esta acción registrará un egreso y liberará la cama actual.
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => {
+                    setIsAltaModalOpen(false);
+                    setPacienteAAlta(null);
+                }}
+                className="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarAlta}
+                className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+              >
+                Confirmar Alta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOTIFICACIONES TOAST */}
+      {notification && (
+        <div className={`fixed bottom-6 right-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 z-50 transition-all duration-300
+          ${notification.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+          {notification.type === 'success' ? <ClipboardList className="w-5 h-5" /> : <X className="w-5 h-5" />}
+          <span className="font-semibold">{notification.message}</span>
         </div>
       )}
     </>
