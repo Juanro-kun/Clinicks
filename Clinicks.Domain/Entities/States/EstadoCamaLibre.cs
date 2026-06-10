@@ -8,16 +8,16 @@ public class EstadoCamaLibre : IEstadoCamaState
 
     public void Ocupar(Cama context)
     {
-        context.CambiarEstado(new EstadoCamaOcupada());
+        context.Fire(Cama.Trigger.Ocupar);
     }
 
     public void Liberar(Cama context)
     {
-        throw new InvalidOperationException("La cama ya está libre.");
+        context.Fire(Cama.Trigger.Liberar);
     }
 
     public void PonerEnMantenimiento(Cama context)
     {
-        context.CambiarEstado(new EstadoCamaEnMantenimiento());
+        context.Fire(Cama.Trigger.PonerEnMantenimiento);
     }
 }
