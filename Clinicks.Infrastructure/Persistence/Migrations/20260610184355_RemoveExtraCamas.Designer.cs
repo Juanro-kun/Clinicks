@@ -4,6 +4,7 @@ using Clinicks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clinicks.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ClinicksDbContext))]
-    partial class ClinicksDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260610184355_RemoveExtraCamas")]
+    partial class RemoveExtraCamas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -64,42 +67,6 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                         {
                             NCama = 3,
                             IdHabitacion = 1,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 1,
-                            IdHabitacion = 2,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 2,
-                            IdHabitacion = 2,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 3,
-                            IdHabitacion = 2,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 1,
-                            IdHabitacion = 3,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 2,
-                            IdHabitacion = 3,
-                            IdEstado = 1
-                        },
-                        new
-                        {
-                            NCama = 3,
-                            IdHabitacion = 3,
                             IdEstado = 1
                         });
                 });
@@ -552,7 +519,7 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                             Apellido = "Admin",
                             Email = "admin",
                             Nombre = "Admin",
-                            Password = "$2a$11$9T37o4WqxHpF1hNZkVKc.O1YW/wVcnuv2BvbQDwBoiKY1ljTksHG6",
+                            Password = "$2a$11$3N/OLsw1OuMCEsB.jErDMOOhlyvYlogasyGjmjYZyOye5npd5Pthq",
                             Rol = 1
                         });
                 });

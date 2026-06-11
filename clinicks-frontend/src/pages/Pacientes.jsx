@@ -208,6 +208,20 @@ export default function Pacientes() {
             return;
         }
 
+        const tienePais = !!patientForm.idPais;
+        const tieneProvincia = !!patientForm.idProvincia;
+        const tieneCiudad = !!patientForm.idCiudad;
+        const tieneCalle = !!patientForm.calle?.trim();
+        const tieneAltura = !!patientForm.altura;
+
+        const tieneAlgunaUbicacion = tienePais || tieneProvincia || tieneCiudad || tieneCalle || tieneAltura;
+        const tieneTodaLaUbicacion = tienePais && tieneProvincia && tieneCiudad && tieneCalle && tieneAltura;
+
+        if (tieneAlgunaUbicacion && !tieneTodaLaUbicacion) {
+            setError("Para registrar la ubicación, debe completar TODOS los campos (Calle, Altura, País, Provincia y Ciudad).");
+            return;
+        }
+
         // 1. Validaciones manuales estrictas
         const dniStr = patientForm.dni.toString().trim();
         if (!/^\d{7,8}$/.test(dniStr)) {
