@@ -288,7 +288,8 @@ public partial class ClinicksDbContext : DbContext
         modelBuilder.Entity<Habitacion>().HasData(
             new Habitacion { IdHabitacion = 1, Nombre = "Sala General" },
             new Habitacion { IdHabitacion = 2, Nombre = "Sala de Emergencias" },
-            new Habitacion { IdHabitacion = 3, Nombre = "Terapia Intensiva" }
+            new Habitacion { IdHabitacion = 3, Nombre = "Terapia Intensiva" },
+            new Habitacion { IdHabitacion = 4, Nombre = "Sala de Observación" }
         );
 
         modelBuilder.Entity<Cama>().HasData(
@@ -300,13 +301,31 @@ public partial class ClinicksDbContext : DbContext
             new Cama { NCama = 3, IdHabitacion = 2, IdEstado = 1 },
             new Cama { NCama = 1, IdHabitacion = 3, IdEstado = 1 },
             new Cama { NCama = 2, IdHabitacion = 3, IdEstado = 1 },
-            new Cama { NCama = 3, IdHabitacion = 3, IdEstado = 1 }
+            new Cama { NCama = 3, IdHabitacion = 3, IdEstado = 1 },
+            new Cama { NCama = 1, IdHabitacion = 4, IdEstado = 2 },
+            new Cama { NCama = 2, IdHabitacion = 4, IdEstado = 2 },
+            new Cama { NCama = 3, IdHabitacion = 4, IdEstado = 2 }
         );
 
         modelBuilder.Entity<Paciente>().HasData(
-            new Paciente { Dni = 45678912, Nombre = "Carlos", Apellido = "Rodríguez", Telefono = "1199887766", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 45678912, Nombre = "Carlos", Apellido = "Lopez", Telefono = "1199887766", Activo = true, CreadoPorUsuarioId = 1 },
             new Paciente { Dni = 33445566, Nombre = "Laura", Apellido = "Fernández", Telefono = "1144556677", Activo = true, CreadoPorUsuarioId = 1 },
-            new Paciente { Dni = 22334455, Nombre = "Diego", Apellido = "Martínez", Telefono = "1166778899", Activo = true, CreadoPorUsuarioId = 1 }
+            new Paciente { Dni = 22334455, Nombre = "Diego", Apellido = "Martínez", Telefono = "1166778899", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 50000001, Nombre = "Ana", Apellido = "García", Telefono = "1122223333", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 50000002, Nombre = "Bruno", Apellido = "Díaz", Telefono = "1144445555", Activo = true, CreadoPorUsuarioId = 1 },
+            new Paciente { Dni = 50000003, Nombre = "Cecilia", Apellido = "Torres", Telefono = "1166667777", Activo = true, CreadoPorUsuarioId = 1 }
+        );
+
+        modelBuilder.Entity<Internacion>().HasData(
+            new Internacion { IdInternacion = 101, Dni = 50000001, FechaIngreso = new DateTime(2026, 6, 10, 10, 0, 0), CreadoPorUsuarioId = 1 },
+            new Internacion { IdInternacion = 102, Dni = 50000002, FechaIngreso = new DateTime(2026, 6, 10, 11, 0, 0), CreadoPorUsuarioId = 1 },
+            new Internacion { IdInternacion = 103, Dni = 50000003, FechaIngreso = new DateTime(2026, 6, 10, 12, 0, 0), CreadoPorUsuarioId = 1 }
+        );
+
+        modelBuilder.Entity<MovimientoCama>().HasData(
+            new MovimientoCama { IdMovimiento = 101, IdInternacion = 101, IdHabitacion = 4, NCama = 1, FechaInicio = new DateTime(2026, 6, 10, 10, 0, 0) },
+            new MovimientoCama { IdMovimiento = 102, IdInternacion = 102, IdHabitacion = 4, NCama = 2, FechaInicio = new DateTime(2026, 6, 10, 11, 0, 0) },
+            new MovimientoCama { IdMovimiento = 103, IdInternacion = 103, IdHabitacion = 4, NCama = 3, FechaInicio = new DateTime(2026, 6, 10, 12, 0, 0) }
         );
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -50,9 +50,7 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
                 columns: new[] { "dni", "Activo", "apellido", "creado_por_usuario_id", "nombre", "telefono" },
                 values: new object[,]
                 {
-                    { 12345678, true, "Pérez", 1, "Juan", "1122334455" },
-                    { 45678912, true, "Rodríguez", 1, "Carlos", "1199887766" },
-                    { 87654321, true, "Gómez", 1, "María", "1155443322" }
+                    { 45678912, true, "Lopez", 1, "Carlos", "1199887766" }
                 });
 
             migrationBuilder.InsertData(
@@ -133,17 +131,7 @@ namespace Clinicks.Infrastructure.Persistence.Migrations
             migrationBuilder.DeleteData(
                 table: "Paciente",
                 keyColumn: "dni",
-                keyValue: 12345678);
-
-            migrationBuilder.DeleteData(
-                table: "Paciente",
-                keyColumn: "dni",
                 keyValue: 45678912);
-
-            migrationBuilder.DeleteData(
-                table: "Paciente",
-                keyColumn: "dni",
-                keyValue: 87654321);
 
             migrationBuilder.DeleteData(
                 table: "Habitacion",
